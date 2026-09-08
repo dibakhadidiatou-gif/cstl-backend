@@ -1,0 +1,11 @@
+{
+  "name": "cstl-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend partage CSTL (Bureau Instruction + Maintenance) - fonctions serveur Vercel + Supabase",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "jsonwebtoken": "^9.0.2",
+    "resend": "^4.0.0"
+  }
+}
