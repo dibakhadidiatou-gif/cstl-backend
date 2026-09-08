@@ -15,6 +15,7 @@ module.exports = async (req, res) => {
   try {
     const { email } = req.body || {};
     const supabase = getSupabase();
+    let debugInfo = { emailReceived: email, allowed: false, resendResult: null };
 
     if (email) {
       const { data: allowed } = await supabase
@@ -22,6 +23,8 @@ module.exports = async (req, res) => {
         .select('email')
         .eq('email', email)
         .maybeSingle();
+
+      debugInfo.allowed = !!allowed;
 
       if (allowed) {
         const code = String(crypto.randomInt(100000, 999999));
@@ -31,19 +34,21 @@ module.exports = async (req, res) => {
           .upsert({ email, code_hash: hashCode(code), expires_at: expiresAt });
 
         const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
+        const result = await resend.emails.send({
           from: process.env.RESEND_FROM || 'CSTL <onboarding@resend.dev>',
           to: email,
           subject: 'CSTL - Code de connexion administrateur',
-          text: `Ton code de connexion est : ${code}\n\nCe code est valable 10 minutes. Si tu n'es pas a l'origine de cette demande, ignore cet email.`
+          text: `Ton code de verification est : ${code}\n\nCe code est valable 10 minutes. Si tu n'es pas a l'origine de cette demande, ignore cet email.`
         });
+        debugInfo.resendResult = result;
+        console.log('Resultat envoi Resend:', JSON.stringify(result));
       }
     }
 
-    // Reponse identique que l'email soit autorise ou non, pour ne pas
-    // reveler quelles adresses sont valides.
-    res.status(200).json({ ok: true });
+    console.log('Debug requestAdminCode:', JSON.stringify(debugInfo));
+    res.status(200).json({ ok: true, debug: debugInfo });
   } catch (err) {
+    console.log('ERREUR requestAdminCode:', String(err.message || err));
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
 };
