@@ -1,18 +1,30 @@
 const { getSupabase } = require('../../lib/supabase');
 const { applyCors, checkAppSecret } = require('../../lib/auth');
 
-// Une fiche validee ne peut plus jamais etre modifiee ni supprimee, meme si
-// le client envoie une version modifiee ou l'omet — c'est desormais une
-// regle appliquee par le serveur, pas seulement par le navigateur (qui
-// pouvait etre contourne en modifiant les donnees locales).
-function reconcileFiches(incoming, stored) {
-  const lockedMap = new Map();
-  (stored || []).forEach((f) => { if (f && f.valide) lockedMap.set(f.id, f); });
+// Fusionne intelligemment au lieu de remplacer : plus aucune perte de
+// donnees en cas d'ecriture concurrente par plusieurs personnes.
+// - Une fiche presente cote serveur mais absente du tableau envoye par le
+//   client n'est JAMAIS supprimee automatiquement (le client peut simplement
+//   ne pas encore la connaitre) — sauf si son id figure explicitement dans
+//   deletedIds (suppression volontaire faite par ce client).
+// - Une fiche validee reste intouchable, meme via deletedIds.
+function mergeFiches(incoming, stored, deletedIds) {
+  const deletedSet = new Set(deletedIds || []);
+  const storedMap = new Map((stored || []).map((f) => [f.id, f]));
+  const result = [];
+  const seen = new Set();
 
-  const result = (incoming || []).map((f) => (lockedMap.has(f.id) ? lockedMap.get(f.id) : f));
+  storedMap.forEach((storedFiche, id) => {
+    seen.add(id);
+    if (storedFiche.valide) { result.push(storedFiche); return; }
+    if (deletedSet.has(id)) { return; }
+    const incomingFiche = (incoming || []).find((f) => f.id === id);
+    result.push(incomingFiche || storedFiche);
+  });
 
-  const resultIds = new Set(result.map((f) => f.id));
-  lockedMap.forEach((f, id) => { if (!resultIds.has(id)) result.push(f); });
+  (incoming || []).forEach((f) => {
+    if (!seen.has(f.id)) { result.push(f); seen.add(f.id); }
+  });
 
   return result;
 }
@@ -33,8 +45,9 @@ module.exports = async (req, res) => {
 
     if (req.method === 'POST') {
       const incoming = (req.body && req.body.fiches) || [];
+      const deletedIds = (req.body && req.body.deletedIds) || [];
       const { data: current } = await supabase.from('instruction_state').select('fiches').eq('id', 'main').maybeSingle();
-      const finalFiches = reconcileFiches(incoming, (current && current.fiches) || []);
+      const finalFiches = mergeFiches(incoming, (current && current.fiches) || [], deletedIds);
 
       const { error } = await supabase
         .from('instruction_state')
