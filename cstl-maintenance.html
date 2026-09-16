@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSTL — Maintenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #0B132B;
+    --navy-2: #0F172A;
+    --navy-3: #1E293B;
+    --steel: #64748B;
+    --sky: #06B6D4;
+    --sky-light: #67E8F9;
+    --sand: #0B132B;
+    --paper: #0F172A;
+    --gold: #06B6D4;
+    --gold-light: #22D3EE;
+    --ink: #E2E8F0;
+    --ink-soft: #94A3B8;
+    --line: #2A3A54;
+    --ok: #34D399;
+    --warn: #FBBF24;
+    --alert: #F87171;
+    --alert-bg: rgba(239,68,68,0.16);
+    --warn-bg: rgba(245,158,11,0.16);
+    --ok-bg: rgba(16,185,129,0.16);
+    --radius: 3px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--sand);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold-light); color:var(--navy);}
+  h1,h2,h3,h4{font-family:'Big Shoulders Display', 'Oswald', sans-serif; font-weight:700; letter-spacing:0.015em; margin:0;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ===== Top bar ===== */
+  .topbar{
+    background:linear-gradient(180deg,var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:0 24px;
+    position:sticky; top:0; z-index:50;
+    box-shadow:0 2px 10px rgba(0,0,0,0.22);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .stripe-bar{
+    height:4px;
+    background:repeating-linear-gradient(-45deg, var(--gold-light) 0 10px, var(--navy-3) 10px 20px);
+    opacity:0.9;
+  }
+  .topbar-inner{
+    max-width:1320px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    height:68px;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .crest{
+    width:44px; height:44px; border-radius:50%; flex-shrink:0;
+    background:radial-gradient(circle at center, #0B132B 0 32%, #FFFFFF 32% 60%, #06B6D4 60% 100%);
+    border:2px solid rgba(255,255,255,0.4);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.4);
+    position:relative;
+  }
+  .crest::after{
+    content:'';
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0deg, rgba(255,255,255,0.18), transparent 30%, transparent 70%, rgba(255,255,255,0.12));
+  }
+  .brand-text h1{font-size:19px; color:#fff; text-transform:uppercase; letter-spacing:0.04em;}
+  .brand-text .sub{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--sky-light); letter-spacing:0.07em; text-transform:uppercase; margin-top:3px;}
+  .motto{font-family:'Big Shoulders Display'; font-weight:700; font-size:11px; color:var(--gold-light); text-align:right; line-height:1.35; letter-spacing:0.1em; text-transform:uppercase; display:none;}
+  .topbar-actions{display:flex; align-items:center; gap:10px;}
+  .save-indicator{display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--sky-light); letter-spacing:0.02em;}
+  .save-dot{width:7px; height:7px; border-radius:50%; background:#5C7A94; transition:background .2s; box-shadow:0 0 0 2px rgba(255,255,255,0.05);}
+  .save-indicator.saving .save-dot{background:var(--gold-light);}
+  .save-indicator.saved .save-dot{background:#34D399;}
+  .save-indicator.error .save-dot{background:var(--alert);}
+  .save-indicator.idle .save-dot{background:#5C7A94;}
+  .icon-btn-top{
+    font-family:'IBM Plex Sans'; font-size:11.5px; color:#D7E1E9; text-transform:uppercase; letter-spacing:0.04em;
+    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.2); border-radius:2px;
+    padding:6px 12px; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .icon-btn-top:hover{background:rgba(255,255,255,0.16); border-color:var(--sky-light);}
+  @media(max-width:640px){ .save-indicator span:not(.save-dot){display:none;} }
+
+  .tabs{display:flex; gap:2px; max-width:1320px; margin:0 auto; padding:0 24px; background:rgba(0,0,0,0.15);}
+  .tab-btn{
+    background:none; border:none; color:#8FA3B3;
+    font-family:'Big Shoulders Display'; font-weight:600; font-size:15px; letter-spacing:0.05em; text-transform:uppercase;
+    padding:11px 20px; cursor:pointer; border-bottom:3px solid transparent;
+    transition:color .15s, border-color .15s;
+  }
+  .tab-btn:hover{color:#fff;}
+  .tab-btn.active{color:#fff; border-bottom-color:var(--gold); background:rgba(255,255,255,0.04);}
+
+  /* ===== Layout ===== */
+  .wrap{max-width:1320px; margin:0 auto; padding:28px 24px 80px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .page-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+  .page-head h2{font-size:26px; text-transform:uppercase; color:var(--sky); display:flex; align-items:center; gap:10px;}
+  .page-head h2::before{content:'▸'; color:var(--gold); font-size:20px;}
+  .page-head .desc{color:var(--ink-soft); font-size:13px; margin-top:4px; font-family:'IBM Plex Mono', monospace; letter-spacing:0.01em;}
+
+  /* ===== Stat strip ===== */
+  .stat-strip{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px;}
+  .stat-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 18px; box-shadow:var(--shadow);
+    border-left:3px solid var(--sky);
+    position:relative;
+  }
+  .stat-card::before, .stat-card::after{
+    content:''; position:absolute; width:10px; height:10px; top:6px; opacity:0.5;
+    border-top:2px solid var(--sky); pointer-events:none;
+  }
+  .stat-card::before{ right:6px; border-right:2px solid var(--sky); }
+  .stat-card::after{ left:6px; border-left:2px solid var(--sky); }
+  .stat-card .num{font-family:'Big Shoulders Display'; font-weight:800; font-size:32px; color:var(--sky); line-height:1;}
+  .stat-card .lbl{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px; font-family:'IBM Plex Mono', monospace;}
+  .stat-card.is-alert{border-left-color:var(--alert);}
+  .stat-card.is-alert .num{color:var(--alert);}
+
+  /* ===== Alerts panel ===== */
+  .alerts-panel{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:26px;}
+  .alerts-head{
+    display:flex; align-items:center; gap:8px;
+    padding:14px 18px; border-bottom:1px solid var(--line); background:linear-gradient(90deg, var(--navy) 0%, var(--navy-3) 100%);
+    border-radius:var(--radius) var(--radius) 0 0;
+  }
+  .alerts-head h3{font-family:'Big Shoulders Display'; font-weight:700; font-size:17px; text-transform:uppercase; color:#fff; letter-spacing:0.05em;}
+  .alert-count{
+    background:var(--alert); color:#fff; font-family:'IBM Plex Mono'; font-size:12px;
+    padding:1px 8px; border-radius:10px;
+  }
+  .alert-list{padding:6px 0;}
+  .alert-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 18px; border-bottom:1px solid rgba(255,255,255,0.07); font-size:13px;
+  }
+  .alert-row:last-child{border-bottom:none;}
+  .alert-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .alert-dot.sev-high{background:var(--alert);}
+  .alert-dot.sev-mid{background:var(--warn);}
+  .alert-row .a-src{color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; margin-left:auto; flex-shrink:0; padding-left:12px; font-family:'IBM Plex Mono', monospace;}
+  .empty-note{padding:22px 18px; color:var(--ink-soft); font-style:italic; font-size:13px;}
+
+  /* ===== Section cards (Maintenance rubriques) ===== */
+  .rub-grid{display:grid; grid-template-columns:1fr; gap:16px;}
+  .rub-card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border-left:3px solid var(--sky);}
+  .rub-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 18px; background:linear-gradient(90deg, var(--navy) 0%, var(--navy-2) 100%); color:#fff; cursor:pointer;
+  }
+  .rub-head h3{font-family:'Big Shoulders Display'; font-weight:700; font-size:18px; letter-spacing:0.03em; color:#fff; text-transform:uppercase;}
+  .rub-head .rub-badges{display:flex; gap:8px; align-items:center;}
+  .rub-toggle{color:var(--gold-light); font-size:12px; transition:transform .15s;}
+  .rub-card.open .rub-toggle{transform:rotate(180deg);}
+  .rub-body{display:none; padding:18px;}
+  .rub-card.open .rub-body{display:block;}
+
+  .badge{
+    font-family:'IBM Plex Mono'; font-size:10.5px; padding:2px 8px; border-radius:2px;
+    text-transform:uppercase; letter-spacing:0.04em; border:1px solid transparent;
+  }
+  .badge.ok{background:var(--ok-bg); color:var(--ok); border-color:rgba(27,95,160,0.3);}
+  .badge.warn{background:var(--warn-bg); color:var(--warn); border-color:rgba(15,62,107,0.3);}
+  .badge.alert{background:var(--alert-bg); color:var(--alert); border-color:rgba(6,33,61,0.3);}
+  .badge.neutral{background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.25);}
+
+  .resp-row{display:flex; gap:24px; flex-wrap:wrap; margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed var(--line);}
+  .field-group{display:flex; flex-direction:column; gap:4px; min-width:180px;}
+  .field-group label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    font-family:'IBM Plex Sans'; font-size:13px; padding:7px 9px;
+    border:1px solid var(--line); border-radius:2px; background:var(--navy); color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--sky-light); outline-offset:0; border-color:var(--sky);}
+  textarea{resize:vertical; min-height:56px;}
+  input.input-error{border-color:var(--alert) !important; background:var(--alert-bg) !important; outline:2px solid var(--alert) !important;}
+
+  .responsibilities{background:var(--navy); border:1px solid var(--line); border-radius:2px; padding:12px 14px; margin-bottom:16px;}
+  .responsibilities summary{cursor:pointer; font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.03em; font-family:'IBM Plex Mono', monospace;}
+  .responsibilities ul{margin:10px 0 0; padding-left:18px; font-size:12.5px; color:var(--ink); line-height:1.7;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-soft);
+    padding:8px 8px; border-bottom:2px solid var(--sky);
+    white-space:nowrap;
+  }
+  td{padding:7px 8px; border-bottom:1px solid rgba(255,255,255,0.07); vertical-align:middle;}
+  tr.row-alert td{background:var(--alert-bg);}
+  tr.row-warn td{background:var(--warn-bg);}
+  td input, td select{width:100%; min-width:80px; padding:5px 7px; font-size:12.5px;}
+  .table-wrap{overflow-x:auto;}
+  .del-btn{
+    background:none; border:1px solid var(--line); color:var(--alert); cursor:pointer;
+    width:24px; height:24px; border-radius:2px; font-size:13px; line-height:1;
+  }
+  .del-btn:hover{background:var(--alert-bg);}
+
+  .add-row-btn, .btn{
+    font-family:'Big Shoulders Display'; font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:0.04em;
+    background:var(--navy); color:#fff; border:none; padding:8px 16px; border-radius:2px;
+    cursor:pointer; transition:background .15s;
+  }
+  .add-row-btn:hover, .btn:hover{background:var(--navy-2);}
+  .btn.gold{background:var(--gold); color:var(--navy); font-weight:700;}
+  .btn.gold:hover{background:var(--gold-light);}
+  .btn.ghost{background:none; border:1px solid var(--line); color:var(--ink);}
+  .btn.ghost:hover{background:rgba(255,255,255,0.06);}
+  .row-actions{display:flex; gap:8px; margin-top:10px;}
+
+  /* ===== Instruction ===== */
+  .fiche-toolbar{display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap;}
+  .fiche-toolbar select{padding:8px 10px;}
+  .fiche-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:14px;}
+  .fiche-card{background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--sky); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
+  .fiche-card.st-retard{border-left-color:var(--alert);}
+  .fiche-card.st-realisee{border-left-color:var(--ok);}
+  .fiche-card.st-cours{border-left-color:var(--warn);}
+  .fiche-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .fiche-ref{font-family:'IBM Plex Mono'; font-weight:600; font-size:10.5px; color:var(--ink-soft);}
+  .fiche-title{font-family:'Big Shoulders Display'; font-weight:700; font-size:17px; color:var(--sky); margin:4px 0 8px; text-transform:none;}
+  .fiche-meta{font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; gap:2px; margin-bottom:10px;}
+  .fiche-meta b{color:var(--ink); font-family:'IBM Plex Mono', monospace; font-weight:500;}
+  .fiche-actions{display:flex; gap:8px; margin-top:10px;}
+  .icon-btn{background:none; border:1px solid var(--line); border-radius:2px; padding:5px 9px; font-size:11px; cursor:pointer; color:var(--ink-soft); font-family:'IBM Plex Sans';}
+  .icon-btn:hover{background:rgba(255,255,255,0.06); color:var(--ink);}
+
+  /* ===== Modal ===== */
+  .modal-bg{
+    display:none; position:fixed; inset:0; background:rgba(3,10,20,0.78);
+    z-index:100; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;
+  }
+  .modal-bg.open{display:flex;}
+  .modal{
+    background:var(--paper); border-radius:4px; width:100%; max-width:560px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35); border-top:4px solid var(--gold);
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); background:linear-gradient(90deg, var(--navy) 0%, var(--navy-2) 100%);}
+  .modal-head h3{font-family:'Big Shoulders Display'; font-weight:700; font-size:18px; text-transform:uppercase; color:#fff; letter-spacing:0.03em;}
+  .modal-close{background:none; border:none; font-size:22px; cursor:pointer; color:var(--sky-light); line-height:1;}
+  .modal-body{padding:20px; display:flex; flex-direction:column; gap:14px; max-height:65vh; overflow-y:auto;}
+  .modal-foot{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
+  .field-full{display:flex; flex-direction:column; gap:5px;}
+  .field-full label.check-row{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; font-weight:normal; text-transform:none; letter-spacing:normal;}
+  .check-row input[type="checkbox"]{width:15px; height:15px; cursor:pointer; accent-color:var(--gold);}
+
+  /* ===== Pièces jointes (photos / documents scannés) ===== */
+  .attach-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px;}
+  .attach-card{position:relative; border:1px solid var(--line); border-radius:2px; background:var(--navy-3); padding:8px; display:flex; flex-direction:column; gap:6px;}
+  .attach-thumb{width:100%; height:90px; object-fit:cover; border-radius:2px; border:1px solid var(--line);}
+  .attach-file-icon{width:100%; height:90px; display:flex; align-items:center; justify-content:center; font-size:30px; background:var(--navy); border:1px solid var(--line); border-radius:2px;}
+  .attach-meta{font-size:11px;}
+  .attach-name{color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .attach-size{color:var(--ink-soft); font-size:10px; margin-top:2px;}
+  .attach-card .del-btn{position:absolute; top:6px; right:6px; background:var(--navy-3);}
+  .field-full label{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
+
+  .loading-note{color:var(--ink-soft); font-size:13px; padding:40px; text-align:center;}
+  .empty-state{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13px; border:1px dashed var(--line); border-radius:4px;}
+
+  .code-block{background:#0E2438; color:#D7E1E9; font-family:'IBM Plex Mono', monospace; font-size:10.8px;
+    padding:14px; border-radius:3px; overflow:auto; white-space:pre; max-height:280px; line-height:1.65;}
+  .settings-steps{font-size:12.5px; color:var(--ink); line-height:1.85; padding-left:18px; margin:0;}
+  .settings-steps li{margin-bottom:4px;}
+  .settings-note{font-size:12px; color:var(--ink-soft); background:var(--navy); border:1px solid var(--line); border-radius:2px; padding:10px 12px;}
+  .inline-row{display:flex; gap:8px; align-items:center;}
+  .inline-row input{flex:1;}
+
+  @media(max-width:720px){
+    .stat-strip{grid-template-columns:repeat(2,1fr);}
+    .motto{display:none;}
+    .resp-row{flex-direction:column; gap:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="crest"></div>
+      <div class="brand-text">
+        <h1>CSTL — Maintenance</h1>
+        <div class="sub">Base Ecole de Thiès · Commandement Soutien Technique et Logistique</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="save-indicator" class="save-indicator"><span class="save-dot"></span><span id="save-indicator-text">Chargement…</span></span>
+      <button class="icon-btn-top" id="btn-settings" title="Configurer la connexion au backend">Paramètres</button>
+      <button class="icon-btn-top" id="btn-export" title="Télécharger une sauvegarde des données">Exporter</button>
+      <label class="icon-btn-top" id="import-label" for="import-file" title="Charger une sauvegarde JSON">Importer</label>
+      <input type="file" id="import-file" accept="application/json" style="display:none;">
+    </div>
+    <div class="motto">Plus Haut<br>En Persévérant</div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-view="overview">Vue d'ensemble</button>
+    <button class="tab-btn" data-view="maintenance">Maintenance</button>
+    <button class="tab-btn" data-view="effectifs">Effectifs</button>
+    <button class="tab-btn" data-view="admin">Administrateur</button>
+  </div>
+  <div class="stripe-bar"></div>
+</div>
+
+<div class="wrap" id="app-root">
+  <div class="loading-note">Chargement du tableau de bord…</div>
+</div>
+
+<div class="modal-bg" id="settings-modal-bg">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>Paramètres</h3>
+      <button class="modal-close" id="settings-modal-close">&times;</button>
+    </div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
+
+      <div class="settings-note">Les données de Maintenance sont désormais partagées entre tous les appareils via un backend central (Vercel + Supabase) — plus besoin d'exporter/importer pour transférer les données d'un poste à l'autre.</div>
+
+      <div class="field-full">
+        <label>URL du backend</label>
+        <input type="text" id="backend-url-input" placeholder="https://ton-projet.vercel.app">
+      </div>
+      <div class="field-full">
+        <label>Secret d'application</label>
+        <input type="text" id="app-secret-input" placeholder="Le secret défini sur Vercel (APP_SECRET)">
+      </div>
+      <div class="row-actions">
+        <button class="btn ghost" id="btn-save-connection">Enregistrer la connexion</button>
+        <button class="btn ghost" id="btn-test-sync">Tester la connexion</button>
+      </div>
+
+      <div style="border-top:1px dashed var(--line); padding-top:14px; margin-top:4px;">
+        <div class="settings-note" style="margin-bottom:12px;">Connexion administrateur — nécessaire pour réinitialiser, exporter ou importer.</div>
+
+        <div id="admin-login-area">
+          <div class="field-full">
+            <label>Adresse email administrateur</label>
+            <input type="text" id="admin-email-input" placeholder="ton.email@exemple.com">
+          </div>
+          <div class="row-actions" style="margin-top:8px;">
+            <button class="btn ghost" id="btn-send-admin-code">Recevoir un code</button>
+          </div>
+          <div id="admin-code-section" style="display:none; flex-direction:column; gap:10px; margin-top:12px;">
+            <div class="field-full">
+              <label>Code reçu par email</label>
+              <input type="text" id="admin-code-input" inputmode="numeric" placeholder="123456">
+            </div>
+            <div class="row-actions">
+              <button class="btn gold" id="btn-verify-admin-code">Se connecter</button>
+            </div>
+          </div>
+          <div class="settings-note" id="admin-login-status-note" style="display:none; margin-top:12px;"></div>
+        </div>
+
+        <div id="admin-logged-in-area" style="display:none; flex-direction:column; gap:14px;">
+          <div class="settings-note">✓ Connecté en tant qu'administrateur (<span id="admin-logged-in-email" class="mono"></span>).</div>
+          <div class="field-full">
+            <label>Zone sensible</label>
+            <div class="settings-note">Efface définitivement <b>toutes les rubriques, tous les effectifs et toute la situation journalière</b> pour tout le monde. Action irréversible.</div>
+            <button class="btn ghost" id="btn-reset-data" style="align-self:flex-start; border-color:var(--alert); color:var(--alert); margin-top:6px;">Réinitialiser toutes les données</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="settings-modal-close-2">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="agent-modal-bg">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3 id="agent-modal-title">Agent</h3>
+      <button class="modal-close" id="agent-modal-close">&times;</button>
+    </div>
+    <div class="modal-body" id="agent-modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="agent-modal-cancel">Annuler</button>
+      <button class="btn gold" id="agent-modal-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CSTL — Logiciel Maintenance
+   ============================================================ */
+
+const STORAGE_KEY = 'cstl-maintenance-data-v1';
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function todayISO(){ return TODAY.toISOString().slice(0,10); }
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+function parseDate(s){ if(!s) return null; const d=new Date(s+'T00:00:00'); return isNaN(d)?null:d; }
+function fmtDate(s){ if(!s) return '—'; const d=parseDate(s); if(!d) return s; return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Date validation ----------
+   Some browsers / webviews don't fully enforce <input type="date"> and let
+   through free text or out-of-range values (e.g. 2024-02-30). This checks a
+   date string is a real, valid ISO calendar date (format + round-trip check
+   to catch overflow like Feb 30 rolling into March). Empty is considered
+   valid (field optional/untouched). */
+function isValidISODate(str){
+  if(!str) return true;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+  const d = new Date(str + 'T00:00:00');
+  if(isNaN(d.getTime())) return false;
+  return d.toISOString().slice(0,10) === str;
+}
+
+/* ---------- Maintenance rubrique definitions ---------- */
+const RUBRIQUES = [
+  {
+    key:'crm', label:'Vérification CRM',
+    responsibilities:[
+      "À la fin de chaque vol, vérifier sommairement le CRM concerné",
+      "Signaler les erreurs au pilote avant le prochain vol de l'aéronef concerné",
+      "À la fin de la journée, vérifier tous les CRM en détail",
+      "Remplir les rubriques dédiées à la maintenance",
+      "Vérifier qu'il n'y ait aucune erreur",
+      "Signaler les erreurs de calcul au pilote afin qu'il les rectifie",
+      "Détacher la feuille du vol concerné et la remettre au BT avant la descente ou le lendemain à la première heure",
+      "Rendre compte de tout problème rencontré",
+      "Vérifier au niveau du SRT le stock de CRM vides restant et rendre compte lorsque celui-ci atteint 10"
+    ],
+    extraFields:[{key:'stock_crm', label:'Stock CRM vides restant (SRT)', type:'number'}],
+    entryCols:[
+      {key:'date', label:'Date', type:'date'},
+      {key:'avion', label:'Aéronef', type:'text'},
+      {key:'erreurs', label:'Erreurs relevées', type:'select', options:['Aucune','Oui — signalée']},
+      {key:'remise_bt', label:'Feuille remise au BT', type:'select', options:['Oui','Non']},
+      {key:'remarque', label:'Remarque', type:'text'}
+    ]
+  },
+  {
+    key:'materiel', label:'Suivi du matériel de servitude',
+    responsibilities:[
+      "Établir un tableau de suivi du matériel disponible (casques, vêtements de pluie, cales, barres de tractage, etc.)",
+      "Tenir à jour le tableau",
+      "Envoyer le tableau au chef de maintenance tous les 15 jours",
+      "Rendre compte de tout manquement ou détérioration d'un matériel"
+    ],
+    extraFields:[{key:'dernier_envoi', label:'Dernier envoi au chef de maintenance', type:'date'}],
+    entryCols:[
+      {key:'item', label:'Matériel', type:'text'},
+      {key:'quantite', label:'Quantité', type:'number'},
+      {key:'etat', label:'État', type:'select', options:['Bon','À surveiller','Détérioré']},
+      {key:'remarque', label:'Remarque', type:'text'}
+    ]
+  },
+  {
+    key:'permissions', label:'Suivi des permissions',
+    responsibilities:[
+      "Établir un tableau de suivi des permissions (date de début et de fin, nombre de jours restants à prendre)",
+      "Tenir à jour le tableau",
+      "Envoyer le tableau au chef de maintenance à chaque changement",
+      "Rendre compte de toute irrégularité"
+    ],
+    extraFields:[],
+    entryCols:[
+      {key:'nom', label:'Nom', type:'text'},
+      {key:'debut', label:'Début', type:'date'},
+      {key:'fin', label:'Fin', type:'date'},
+      {key:'jours_restants_annee', label:'Jours restants à prendre', type:'number', min:0, max:45},
+      {key:'jours_restants_45', label:'Jours restants (congé 45 jours)', type:'number', min:0, max:45}
+    ]
+  },
+  {
+    key:'couleurs_presence', label:'Présence Couleurs',
+    responsibilities:[
+      "Tenir à jour la liste des éléments présents à la levée des couleurs",
+      "Signaler toute absence non justifiée au chef de section"
+    ],
+    extraFields:[],
+    entryCols:[
+      {key:'nom', label:'Nom', type:'text'},
+      {key:'prenoms', label:'Prénoms', type:'text'},
+      {key:'grade', label:'Grade', type:'text'},
+      {key:'presence', label:'Présence', type:'select', options:['Présent','Absent']}
+    ]
+  },
+  {
+    key:'ppv_groupe', label:'Groupe PPV (Préparation Pour Vols)',
+    responsibilities:[
+      "Tenir à jour la liste des éléments affectés à la Préparation Pour Vols",
+      "Mettre à jour la liste à chaque changement d'affectation"
+    ],
+    extraFields:[],
+    entryCols:[
+      {key:'nom', label:'Nom', type:'text'},
+      {key:'prenoms', label:'Prénoms', type:'text'},
+      {key:'grade', label:'Grade', type:'text'},
+      {key:'presence', label:'Présence', type:'select', options:['Présent','Absent']}
+    ]
+  },
+  {
+    key:'batteries', label:'Suivi des batteries',
+    responsibilities:[
+      "Établir un tableau de suivi des batteries",
+      "Suivre et planifier les dates des prochaines recharges",
+      "Vérifier le bon fonctionnement du banc de charge chaque semaine",
+      "Rendre compte de toute anomalie",
+      "Rendre compte trois mois avant la date de la prochaine calibration du banc de charge"
+    ],
+    extraFields:[{key:'derniere_verif_banc', label:'Dernière vérification banc de charge', type:'date'},
+                 {key:'prochaine_calibration_banc', label:'Prochaine calibration du banc de charge', type:'date'}],
+    entryCols:[
+      {key:'batterie', label:'Batterie (n°/aéronef)', type:'text'},
+      {key:'prochaine_recharge', label:'Prochaine recharge', type:'date'},
+      {key:'etat', label:'État', type:'select', options:['Bon','À surveiller','HS']}
+    ]
+  },
+  {
+    key:'proprete_aero', label:'Propreté aéronefs',
+    responsibilities:[
+      "Garantir la propreté intérieure et extérieure de l'aéronef",
+      "Contrôler l'état de propreté de l'aéronef avant et après chaque vol",
+      "Inspecter l'absence de FOD avant et après chaque vol",
+      "Détecter et signaler toute anomalie (fuite, corrosion, résidu)",
+      "Rendre compte de tout manquement au chef de maintenance"
+    ],
+    extraFields:[],
+    entryCols:[
+      {key:'date', label:'Date', type:'date'},
+      {key:'avion', label:'Aéronef', type:'text'},
+      {key:'avant_vol', label:'Avant vol', type:'select', options:['OK','Anomalie']},
+      {key:'apres_vol', label:'Après vol', type:'select', options:['OK','Anomalie']},
+      {key:'fod', label:'FOD détecté', type:'select', options:['Non','Oui']},
+      {key:'remarque', label:'Remarque', type:'text'}
+    ]
+  },
+  {
+    key:'points_fixes', label:'Points fixes hélicos',
+    responsibilities:[
+      "Suivre les dates de point fixe (maximum 21 jours entre 2 vols)",
+      "Envoyer chaque semaine l'état des points fixes à venir au chef de maintenance",
+      "Planifier avec les pilotes les points fixes",
+      "Rendre compte de tout retard de point fixe"
+    ],
+    extraFields:[{key:'dernier_envoi_hebdo', label:'Dernier envoi hebdomadaire au chef de maintenance', type:'date'}],
+    entryCols:[
+      {key:'helico', label:'Hélicoptère', type:'text'},
+      {key:'dernier_point_fixe', label:'Dernier point fixe / vol', type:'date'}
+    ]
+  },
+  {
+    key:'proprete_env', label:'Propreté environnement',
+    responsibilities:[
+      "Veiller en permanence à l'absence de tout corps étranger (FOD) sur l'aire de maintenance, le hangar et leurs abords",
+      "Assurer la propreté et l'ordre du hangar, du bureau piste et du bar, et le respect des règles d'hygiène",
+      "Vérifier l'état, la disponibilité et le bon fonctionnement du matériel de nettoyage",
+      "Effectuer des inspections régulières de propreté et rendre compte de tout écart constaté"
+    ],
+    extraFields:[],
+    entryCols:[
+      {key:'date', label:'Date', type:'date'},
+      {key:'zone', label:'Zone (hangar/piste/bureau/bar)', type:'text'},
+      {key:'etat', label:'État', type:'select', options:['Conforme','Écart constaté']},
+      {key:'remarque', label:'Remarque', type:'text'}
+    ]
+  }
+];
+
+/* Ces rubriques sont définies comme les autres (mêmes entrées, mêmes colonnes,
+   même synchronisation vers le Sheet) mais s'affichent uniquement dans
+   "Gestion des effectifs", jamais dans la grille de la page Maintenance. */
+const EFFECTIFS_ONLY_RUBRIQUES = ['permissions', 'couleurs_presence', 'ppv_groupe'];
+
+/* ---------- Gestion des effectifs (personnel) ---------- */
+const EFFECTIF_STATUTS = ['Présent','PCD','PRLD','PTC','Mission','Stage','ASM','Indisponible','En service'];
+const EFFECTIF_STATUT_LABELS = {
+  'Présent': 'Présent',
+  'PCD': 'PCD — Permission de Courte Durée',
+  'PRLD': 'PRLD — Permission Réglementaire de Longue Durée',
+  'PTC': 'PTC — Permission Temporaire de Convalescence',
+  'Mission': 'Mission',
+  'Stage': 'Stage',
+  'ASM': 'ASM — Absence Sans Motif',
+  'Indisponible': 'Indisponible (autre motif)',
+  'En service': 'En service'
+};
+const AGENT_FIELDS = [
+  {key:'grade', label:'Grade', type:'text'},
+  {key:'gradeType', label:'Catégorie', type:'text'},
+  {key:'prenoms', label:'Prénoms', type:'text'},
+  {key:'nom', label:'Nom', type:'text'},
+  {key:'idNum', label:'ID / Matricule', type:'text'},
+  {key:'adresseActuelle', label:'Adresse actuelle', type:'text'},
+  {key:'domicile', label:'Domicile (origine)', type:'text'},
+  {key:'transport', label:'Moyen de transport utilisé', type:'text'},
+  {key:'diplome', label:'Diplôme', type:'text'},
+  {key:'qualification', label:'Qualification', type:'text'},
+  {key:'certification', label:'Certification', type:'text'},
+];
+
+/* ---------- Default data ---------- */
+function defaultData(){
+  const maintenance = {};
+  RUBRIQUES.forEach(r=>{
+    maintenance[r.key] = { responsable:'', suppleants:'', extra:{}, entries:[] };
+  });
+  return { maintenance, effectifs:{agents:[], situations:[]}, settings:{backendUrl:'', appSecret:''} };
+}
+
+let DATA = null;
+let ACTIVE_VIEW = 'overview';
+let OPEN_RUB = null;
+let EFFECTIFS_SUBVIEW = 'agents'; // 'agents' | 'situation' | 'couleurs' | 'ppv' | 'permissions'
+let EFFECTIFS_DATE = null; // set on first render to today
+let editingAgentId = null;
+let AGENT_MODAL_PIECES = []; // pièces jointes (photos/scans) en cours d'édition dans le modal élément
+let ADMIN_TOKEN = null;
+let ADMIN_TOKEN_EXPIRES = 0;
+let ADMIN_EMAIL_LOGGED_IN = '';
+let PENDING_ADMIN_ACTION = null;
+
+/* ---------- Storage abstraction ----------
+   Seules les infos de CONNEXION (URL du backend, secret d'application) sont
+   gardées localement — elles sont nécessaires avant même de pouvoir
+   contacter le backend. Les vraies données (rubriques, effectifs) ne vivent
+   plus ici : elles vivent sur le backend partagé, communes à tous les
+   appareils. */
+const HAS_CLAUDE_STORAGE = (typeof window !== 'undefined' && !!window.storage);
+
+async function storageRead(key){
+  if(HAS_CLAUDE_STORAGE){
+    try{ const res = await window.storage.get(key, true); return res ? res.value : null; }
+    catch(e){ /* key may not exist yet, or call failed — fall through */ }
+  }
+  try{ return localStorage.getItem(key); }
+  catch(e){ return null; }
+}
+
+async function storageWrite(key, jsonStr){
+  if(HAS_CLAUDE_STORAGE){
+    try{ await window.storage.set(key, jsonStr, true); return true; }
+    catch(e){ console.error('window.storage indisponible, repli sur localStorage', e); }
+  }
+  try{ localStorage.setItem(key, jsonStr); return true; }
+  catch(e){ console.error('Erreur de sauvegarde locale', e); return false; }
+}
+
+async function loadConnectionSettings(){
+  let conn = { backendUrl:'', appSecret:'' };
+  try{
+    const raw = await storageRead(STORAGE_KEY);
+    if(raw) conn = Object.assign(conn, JSON.parse(raw));
+  }catch(e){ /* pas encore de connexion enregistrée */ }
+  return conn;
+}
+
+async function saveConnectionSettings(){
+  await storageWrite(STORAGE_KEY, JSON.stringify({ backendUrl: DATA.settings.backendUrl, appSecret: DATA.settings.appSecret }));
+}
+
+/* Persistance de la session administrateur (jeton + expiration + email) —
+   sans ça, recharger la page forcerait à se reconnecter à chaque fois, même
+   en pleine session valide côté serveur. Stockée séparément des données
+   métier, jamais envoyée au backend. */
+const ADMIN_SESSION_KEY = STORAGE_KEY + '-admin-session';
+
+async function loadAdminSession(){
+  try{
+    const raw = await storageRead(ADMIN_SESSION_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.token && parsed.expires && Date.now() < parsed.expires){
+        ADMIN_TOKEN = parsed.token;
+        ADMIN_TOKEN_EXPIRES = parsed.expires;
+        ADMIN_EMAIL_LOGGED_IN = parsed.email || '';
+      }
+    }
+  }catch(e){ /* pas de session enregistrée */ }
+}
+
+async function saveAdminSession(){
+  await storageWrite(ADMIN_SESSION_KEY, JSON.stringify({ token: ADMIN_TOKEN, expires: ADMIN_TOKEN_EXPIRES, email: ADMIN_EMAIL_LOGGED_IN }));
+}
+
+/* Appel générique vers le backend Vercel. Ajoute automatiquement le secret
+   d'application, et le jeton de session administrateur si demandé (auth:true)
+   et disponible. */
+async function backendFetch(path, opts = {}){
+  const base = (DATA.settings && DATA.settings.backendUrl) ? DATA.settings.backendUrl.trim().replace(/\/+$/,'') : '';
+  if(!base) throw new Error("URL du backend non configurée. Ouvre Paramètres pour la renseigner.");
+  const headers = { 'Content-Type': 'application/json' };
+  if(DATA.settings && DATA.settings.appSecret) headers['X-App-Secret'] = DATA.settings.appSecret;
+  if(opts.auth && ADMIN_TOKEN) headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
+  const res = await fetch(base + path, {
+    method: opts.method || 'GET',
+    headers,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
+  });
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* reponse non-JSON, restera null */ }
+  return { status: res.status, ok: res.ok, data };
+}
+
+let LAST_SYNCED_MAINTENANCE = {};
+let LAST_SYNCED_AGENTS = [];
+
+async function loadData(){
+  DATA = defaultData();
+  const conn = await loadConnectionSettings();
+  DATA.settings.backendUrl = conn.backendUrl || '';
+  DATA.settings.appSecret = conn.appSecret || '';
+  await loadAdminSession();
+
+  if(!DATA.settings.backendUrl){
+    setSaveIndicator('idle', 'Backend non configuré');
+    return;
+  }
+
+  setSaveIndicator('saving', 'Chargement…');
+  try{
+    const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
+    if(ok && data && data.ok){
+      RUBRIQUES.forEach(r=>{ if(!data.maintenance[r.key]) data.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
+      DATA.maintenance = data.maintenance || DATA.maintenance;
+      DATA.effectifs = data.effectifs || DATA.effectifs;
+      if(!DATA.effectifs.agents) DATA.effectifs.agents = [];
+      if(!DATA.effectifs.situations) DATA.effectifs.situations = [];
+      normalizeEntryBounds();
+      snapshotSyncedState();
+      setSaveIndicator('saved', 'Synchronisé');
+    } else {
+      setSaveIndicator('error', (data && data.error) || 'Échec du chargement');
+    }
+  }catch(e){
+    setSaveIndicator('error', 'Backend injoignable');
+  }
+}
+
+/* Garde une copie de ce qu'on sait être sur le serveur, pour pouvoir
+   detecter plus tard une suppression volontaire (un id present ici mais
+   disparu de DATA au moment d'enregistrer). */
+function snapshotSyncedState(){
+  LAST_SYNCED_MAINTENANCE = {};
+  RUBRIQUES.forEach(r=>{
+    const d = DATA.maintenance[r.key];
+    LAST_SYNCED_MAINTENANCE[r.key] = (d && d.entries) ? d.entries.map(e=>Object.assign({}, e)) : [];
+  });
+  LAST_SYNCED_AGENTS = (DATA.effectifs.agents || []).map(a=>Object.assign({}, a));
+}
+
+/* Corrige automatiquement toute valeur déjà enregistrée avant la mise en place
+   du blocage min/max (ex. un ancien 356 saisi avant la limite à 45) — sans ça,
+   une vieille valeur resterait bloquée hors bornes indéfiniment même après la
+   correction du code, et continuerait à déclencher l'alerte « incohérent ». */
+function normalizeEntryBounds(){
+  RUBRIQUES.forEach(r=>{
+    const d = DATA.maintenance[r.key];
+    if(!d || !d.entries) return;
+    d.entries.forEach(e=>{
+      r.entryCols.forEach(c=>{
+        if(c.type !== 'number' || (c.min === undefined && c.max === undefined)) return;
+        if(e[c.key] === undefined || e[c.key] === '') return;
+        let num = Number(e[c.key]);
+        if(isNaN(num)) return;
+        if(c.min !== undefined && num < c.min) num = c.min;
+        if(c.max !== undefined && num > c.max) num = c.max;
+        e[c.key] = num;
+      });
+    });
+  });
+}
+
+let saveTimer = null;
+function saveData(){
+  setSaveIndicator('saving', 'Enregistrement…');
+  clearTimeout(saveTimer);
+  if(!DATA.settings.backendUrl){ setSaveIndicator('error', 'Backend non configuré'); return; }
+  saveTimer = setTimeout(async ()=>{
+    try{
+      // Une ligne (entree de rubrique, element d'effectif) presente dans le
+      // dernier etat connu du serveur mais absente localement a ete
+      // supprimee ICI, volontairement — on le dit explicitement au serveur
+      // au lieu de le laisser deviner (sinon, tout ajout fait entre-temps
+      // par quelqu'un d'autre et qu'on ne connait pas encore serait effacé).
+      const deletedEntryIds = {};
+      RUBRIQUES.forEach(r=>{
+        const before = LAST_SYNCED_MAINTENANCE[r.key] || [];
+        const after = (DATA.maintenance[r.key] && DATA.maintenance[r.key].entries) || [];
+        const del = before.filter(e=> !after.some(x=>x.id===e.id)).map(e=>e.id);
+        if(del.length) deletedEntryIds[r.key] = del;
+      });
+      const deletedAgentIds = LAST_SYNCED_AGENTS.filter(a=> !DATA.effectifs.agents.some(x=>x.id===a.id)).map(a=>a.id);
+
+      const { ok, data } = await backendFetch('/api/maintenance/state', {
+        method:'POST',
+        body:{ maintenance: DATA.maintenance, effectifs: DATA.effectifs, deletedEntryIds, deletedAgentIds }
+      });
+      if(ok && data && data.ok){
+        // Le serveur renvoie l'etat final consolide (fusionne avec les ajouts
+        // eventuels d'autres personnes) : on l'adopte comme nouvelle reference.
+        DATA.maintenance = data.maintenance || DATA.maintenance;
+        DATA.effectifs = data.effectifs || DATA.effectifs;
+        snapshotSyncedState();
+        setSaveIndicator('saved', 'Synchronisé');
+      } else {
+        setSaveIndicator('error', (data && data.error) || "Échec de l'enregistrement");
+      }
+    }catch(e){
+      setSaveIndicator('error', 'Backend injoignable');
+    }
+  }, 400);
+}
+
+/* Actualisation automatique périodique : sans ça, une personne qui garde
+   l'appli ouverte longtemps ne verrait jamais ce que d'autres ajoutent
+   pendant ce temps, tant qu'elle ne recharge pas la page elle-même. On
+   n'actualise pas si un modal est ouvert, pour ne pas interrompre une saisie
+   en cours. */
+let autoRefreshTimer = null;
+function startAutoRefresh(){
+  clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(async ()=>{
+    if(!DATA || !DATA.settings.backendUrl) return;
+    if(document.querySelector('.modal-bg.open')) return;
+    try{
+      const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
+      if(ok && data && data.ok){
+        RUBRIQUES.forEach(r=>{ if(!data.maintenance[r.key]) data.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
+        DATA.maintenance = data.maintenance || DATA.maintenance;
+        DATA.effectifs = data.effectifs || DATA.effectifs;
+        if(!DATA.effectifs.agents) DATA.effectifs.agents = [];
+        if(!DATA.effectifs.situations) DATA.effectifs.situations = [];
+        normalizeEntryBounds();
+        snapshotSyncedState();
+        render();
+      }
+    }catch(e){ /* on retentera au prochain intervalle */ }
+  }, 30000);
+}
+
+function setSaveIndicator(state, text){
+  const el = document.getElementById('save-indicator');
+  const txt = document.getElementById('save-indicator-text');
+  if(!el || !txt) return;
+  el.className = 'save-indicator ' + state;
+  txt.textContent = text;
+}
+
+/* ---------- Manual export / import (JSON backup) ---------- */
+function exportData(){
+  // On n'exporte que les données métier (jamais l'URL du backend ni le
+  // secret d'application — ces informations de connexion ne doivent pas se
+  // retrouver dans un fichier de sauvegarde qui pourrait circuler).
+  const blob = new Blob([JSON.stringify({ maintenance: DATA.maintenance, effectifs: DATA.effectifs }, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = todayISO();
+  a.href = url;
+  a.download = `cstl-maintenance-sauvegarde-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function importDataFromFile(file){
+  const text = await file.text().catch(()=>null);
+  if(!text){ alert('Impossible de lire ce fichier.'); return; }
+  let parsed;
+  try{ parsed = JSON.parse(text); }catch(e){ alert("Ce fichier n'est pas un JSON valide."); return; }
+  if(!parsed || typeof parsed !== 'object' || !parsed.maintenance || !parsed.effectifs){
+    alert("Ce fichier n'est pas une sauvegarde valide de ce tableau de bord.");
+    return;
+  }
+  RUBRIQUES.forEach(r=>{ if(!parsed.maintenance[r.key]) parsed.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
+  if(!parsed.effectifs.agents) parsed.effectifs.agents = [];
+  if(!parsed.effectifs.situations) parsed.effectifs.situations = [];
+  try{
+    const { ok, data } = await backendFetch('/api/maintenance/state', { method:'POST', body:{ maintenance: parsed.maintenance, effectifs: parsed.effectifs } });
+    if(ok && data && data.ok){
+      DATA.maintenance = parsed.maintenance;
+      DATA.effectifs = parsed.effectifs;
+      normalizeEntryBounds();
+      render();
+      alert('Sauvegarde importée avec succès.');
+    } else {
+      alert((data && data.error) || "Échec de l'import.");
+    }
+  }catch(e){
+    alert('Backend injoignable — vérifie la connexion dans Paramètres.');
+  }
+}
+
+function openSettingsModal(){
+  document.getElementById('backend-url-input').value = (DATA.settings && DATA.settings.backendUrl) || '';
+  document.getElementById('app-secret-input').value = (DATA.settings && DATA.settings.appSecret) || '';
+  document.getElementById('admin-email-input').value = '';
+  document.getElementById('admin-code-input').value = '';
+  document.getElementById('admin-code-section').style.display = 'none';
+  const note = document.getElementById('admin-login-status-note');
+  note.style.display = 'none'; note.textContent = '';
+  renderAdminLoginState();
+  document.getElementById('settings-modal-bg').classList.add('open');
+}
+function closeSettingsModal(){
+  document.getElementById('settings-modal-bg').classList.remove('open');
+  // Fermer sans se connecter annule toute action qui attendait la connexion.
+  PENDING_ADMIN_ACTION = null;
+}
+
+function hasValidAdminSession(){
+  return !!ADMIN_TOKEN && Date.now() < ADMIN_TOKEN_EXPIRES;
+}
+
+function renderAdminLoginState(){
+  const loginArea = document.getElementById('admin-login-area');
+  const loggedInArea = document.getElementById('admin-logged-in-area');
+  if(hasValidAdminSession()){
+    loginArea.style.display = 'none';
+    loggedInArea.style.display = 'flex';
+    document.getElementById('admin-logged-in-email').textContent = ADMIN_EMAIL_LOGGED_IN || '—';
+  } else {
+    loginArea.style.display = 'block';
+    loggedInArea.style.display = 'none';
+  }
+}
+
+async function sendAdminLoginCode(){
+  const email = document.getElementById('admin-email-input').value.trim();
+  const note = document.getElementById('admin-login-status-note');
+  if(!DATA.settings.backendUrl){ alert("Renseigne d'abord l'URL du backend, puis clique « Enregistrer la connexion »."); return; }
+  if(!email){ alert('Indique ton adresse email.'); return; }
+  note.style.display = 'block';
+  note.textContent = 'Envoi en cours…';
+  try{
+    const { ok, data } = await backendFetch('/api/admin/request-code', { method:'POST', body:{ email } });
+    if(ok){
+      note.textContent = "Si cette adresse est autorisée, un code vient d'être envoyé (vérifie aussi les indésirables). Valable 10 minutes.";
+      document.getElementById('admin-code-section').style.display = 'flex';
+    } else {
+      note.textContent = (data && data.error) || "Échec de l'envoi.";
+    }
+  }catch(e){
+    note.textContent = "Échec de l'envoi. Vérifie l'URL du backend et le secret d'application ci-dessus.";
+  }
+}
+
+async function verifyAdminLoginCode(){
+  const email = document.getElementById('admin-email-input').value.trim();
+  const code = document.getElementById('admin-code-input').value.trim();
+  const note = document.getElementById('admin-login-status-note');
+  if(!code){ alert('Saisis le code reçu par email.'); return; }
+  note.style.display = 'block';
+  note.textContent = 'Vérification…';
+  try{
+    const { ok, data } = await backendFetch('/api/admin/verify-code', { method:'POST', body:{ email, code } });
+    if(ok && data && data.ok && data.token){
+      ADMIN_TOKEN = data.token;
+      ADMIN_TOKEN_EXPIRES = Date.now() + 23.5 * 60 * 60 * 1000; // un peu sous les 24h serveur, marge de sécurité
+      ADMIN_EMAIL_LOGGED_IN = email;
+      await saveAdminSession();
+      renderAdminLoginState();
+      const pending = PENDING_ADMIN_ACTION; PENDING_ADMIN_ACTION = null;
+      if(pending) pending();
+    } else {
+      note.textContent = (data && data.error) || 'Code invalide ou expiré.';
+    }
+  }catch(e){
+    note.textContent = "Échec de la vérification. Vérifie ta connexion.";
+  }
+}
+
+/* Utilisé par toute action réservée à l'administrateur (réinitialiser,
+   exporter, importer). Si une session valide existe déjà, exécute directement
+   la fonction fournie ; sinon, ouvre les réglages pour se connecter, puis
+   exécute automatiquement l'action une fois la connexion réussie. */
+function requireAdminAccess(afterLoginFn){
+  if(hasValidAdminSession()){ afterLoginFn(); return; }
+  if(!DATA.settings.backendUrl){
+    alert("Renseigne d'abord la connexion au backend dans Paramètres avant de te connecter en tant qu'administrateur.");
+    openSettingsModal();
+    return;
+  }
+  PENDING_ADMIN_ACTION = afterLoginFn;
+  alert("Connexion administrateur requise pour cette action — renseigne ton email pour recevoir un code.");
+  openSettingsModal();
+}
+
+/* Réinitialisation complète, pour tout le monde (le backend est la source de
+   vérité partagée). Action irréversible, réservée à l'administrateur connecté. */
+function resetAllData(){
+  requireAdminAccess(async ()=>{
+    const ok = window.confirm("Cette action supprime définitivement TOUTES les rubriques, tous les effectifs et toute la situation journalière, pour tout le monde.\n\nContinuer ?");
+    if(!ok) return;
+    const typed = window.prompt('Pour confirmer, tape RESET (en majuscules) puis valide :');
+    if(typed !== 'RESET'){ alert('Réinitialisation annulée.'); return; }
+    try{
+      const { ok: httpOk, data } = await backendFetch('/api/maintenance/reset', { method:'POST', auth:true });
+      if(httpOk && data && data.ok){
+        DATA.maintenance = defaultData().maintenance;
+        DATA.effectifs = { agents: [], situations: [] };
+        closeSettingsModal();
+        render();
+        alert('Toutes les données ont été supprimées. Le tableau de bord repart de zéro.');
+      } else {
+        alert((data && data.error) || 'Échec de la réinitialisation.');
+      }
+    }catch(e){
+      alert('Backend injoignable.');
+    }
+  });
+}
+
+async function saveConnectionFromSettings(){
+  const url = document.getElementById('backend-url-input').value.trim().replace(/\/+$/,'');
+  const secret = document.getElementById('app-secret-input').value.trim();
+  DATA.settings.backendUrl = url;
+  DATA.settings.appSecret = secret;
+  await saveConnectionSettings();
+  alert('Connexion enregistrée.');
+  loadData().then(()=>{ render(); });
+}
+
+async function testBackendConnection(){
+  const url = document.getElementById('backend-url-input').value.trim().replace(/\/+$/,'');
+  const secret = document.getElementById('app-secret-input').value.trim();
+  if(!url){ alert("Renseigne l'URL du backend avant de tester."); return; }
+  const prevUrl = DATA.settings.backendUrl, prevSecret = DATA.settings.appSecret;
+  DATA.settings.backendUrl = url;
+  DATA.settings.appSecret = secret;
+  try{
+    const { ok, data, status } = await backendFetch('/api/maintenance/state', { method:'GET' });
+    if(ok && data && data.ok){
+      alert(`Connexion réussie ! ${data.agents ? data.agents.length : (data.effectifs ? data.effectifs.agents.length : 0)} élément(s) actuellement sur le backend.`);
+    } else {
+      alert(`Échec (code ${status}). ${data && data.error ? data.error : "Vérifie l'URL et le secret d'application."}`);
+    }
+  }catch(e){
+    alert("La requête n'a pas pu être envoyée. Vérifie l'URL du backend et ta connexion.");
+  }finally{
+    DATA.settings.backendUrl = prevUrl; DATA.settings.appSecret = prevSecret;
+  }
+}
+
+
+/* ============================================================
+   Alerts engine
+   ============================================================ */
+/* Une rubrique jamais touchée (aucun responsable désigné, aucune entrée) ne
+   doit pas être signalée en vigilance juste parce qu'une date de suivi est
+   vide — ce n'est pas un retard, personne n'a simplement encore commencé à
+   l'utiliser. On ne déclenche l'alerte "date non renseignée" que si la
+   rubrique montre un signe d'utilisation réelle. */
+function rubriqueEnCours(d){
+  return !!(d.responsable && d.responsable.trim()) || !!(d.entries && d.entries.length > 0);
+}
+
+function computeAlerts(){
+  const alerts = []; // {sev:'high'|'mid', text, src}
+  const push = (sev, text, src) => alerts.push({sev, text, src});
+
+  RUBRIQUES.forEach(r=>{
+    const d = DATA.maintenance[r.key];
+    if(!d) return;
+
+    if(r.key === 'crm'){
+      const stock = Number(d.extra.stock_crm || 0);
+      if(stock >= 10) push('high', `Stock de CRM vides au SRT : ${stock} — seuil de 10 atteint, à signaler.`, r.label);
+    }
+    if(r.key === 'materiel'){
+      const last = parseDate(d.extra.dernier_envoi);
+      if(!last){ if(rubriqueEnCours(d)) push('mid', `Aucune date de dernier envoi renseignée au chef de maintenance.`, r.label); }
+      else { const days = daysBetween(last, TODAY); if(days > 15) push('high', `Tableau matériel non envoyé depuis ${days} jours (limite 15 jours).`, r.label); }
+    }
+    if(r.key === 'permissions'){
+      (d.entries||[]).forEach(e=>{
+        const fin = parseDate(e.fin);
+        if(fin){
+          const restants = daysBetween(TODAY, fin); // jours restants avant la fin de permission
+          if(restants < 0) push('mid', `Permission de ${e.nom || '—'} : date de fin dépassée (${fmtDate(e.fin)}).`, r.label);
+          else if(restants <= 2) push('high', `Permission de ${e.nom || '—'} : fin de permission dans ${restants} jour${restants>1?'s':''} (${fmtDate(e.fin)}) — prévoir le retour.`, r.label);
+        }
+        if(e.jours_restants_annee !== undefined && e.jours_restants_annee !== ''){
+          const v = Number(e.jours_restants_annee);
+          if(!isNaN(v)){
+            if(v < 0 || v > 45) push('mid', `${e.nom || '—'} : « Jours restants à prendre » incohérent (${v}) — à vérifier.`, r.label);
+            else if(v === 0) push('mid', `${e.nom || '—'} : quota de jours restants à prendre épuisé (0 jour).`, r.label);
+          }
+        }
+        if(e.jours_restants_45 !== undefined && e.jours_restants_45 !== ''){
+          const v = Number(e.jours_restants_45);
+          if(!isNaN(v)){
+            if(v < 0 || v > 45) push('mid', `${e.nom || '—'} : « Jours restants (congé 45 jours) » incohérent (${v}) — à vérifier.`, r.label);
+            else if(v === 0) push('mid', `${e.nom || '—'} : quota du congé 45 jours épuisé (0 jour restant).`, r.label);
+          }
+        }
+      });
+    }
+    if(r.key === 'batteries'){
+      const lastCheck = parseDate(d.extra.derniere_verif_banc);
+      if(!lastCheck){ if(rubriqueEnCours(d)) push('mid', `Vérification hebdomadaire du banc de charge non renseignée.`, r.label); }
+      else { const days = daysBetween(lastCheck, TODAY); if(days > 7) push('high', `Banc de charge non vérifié depuis ${days} jours (contrôle hebdomadaire requis).`, r.label); }
+      const calib = parseDate(d.extra.prochaine_calibration_banc);
+      if(calib){ const days = daysBetween(TODAY, calib); if(days <= 90 && days >= 0) push('mid', `Calibration du banc de charge dans ${days} jours (${fmtDate(d.extra.prochaine_calibration_banc)}) — à anticiper.`, r.label);
+        else if(days < 0) push('high', `Calibration du banc de charge dépassée (${fmtDate(d.extra.prochaine_calibration_banc)}).`, r.label); }
+      (d.entries||[]).forEach(e=>{
+        const rec = parseDate(e.prochaine_recharge);
+        if(rec && daysBetween(rec, TODAY) > 0) push('high', `Batterie ${e.batterie || '—'} : recharge prévue le ${fmtDate(e.prochaine_recharge)} dépassée.`, r.label);
+      });
+    }
+    if(r.key === 'points_fixes'){
+      (d.entries||[]).forEach(e=>{
+        const last = parseDate(e.dernier_point_fixe);
+        if(last){
+          const days = daysBetween(last, TODAY);
+          if(days > 21) push('high', `${e.helico || '—'} : ${days} jours depuis le dernier point fixe (max. 21 jours) — RETARD.`, r.label);
+          else if(days >= 18) push('mid', `${e.helico || '—'} : ${days} jours depuis le dernier point fixe — échéance proche (max. 21 jours).`, r.label);
+        }
+      });
+      const lastSend = parseDate(d.extra.dernier_envoi_hebdo);
+      if(lastSend){ const days = daysBetween(lastSend, TODAY); if(days > 7) push('mid', `État des points fixes non envoyé depuis ${days} jours (envoi hebdomadaire requis).`, r.label); }
+    }
+    if(r.key === 'proprete_aero'){
+      (d.entries||[]).slice(-10).forEach(e=>{
+        if(e.avant_vol === 'Anomalie' || e.apres_vol === 'Anomalie' || e.fod === 'Oui')
+          push('mid', `${e.avion || '—'} (${fmtDate(e.date)}) : anomalie de propreté ou FOD relevé.`, r.label);
+      });
+    }
+    if(r.key === 'proprete_env'){
+      (d.entries||[]).slice(-10).forEach(e=>{
+        if(e.etat === 'Écart constaté') push('mid', `${e.zone || '—'} (${fmtDate(e.date)}) : écart de propreté constaté.`, r.label);
+      });
+    }
+  });
+
+  // Effectifs : ASM (absence sans motif) sur la dernière situation renseignée
+  const lastSituation = DATA.effectifs.situations.slice().sort((a,b)=> b.date.localeCompare(a.date))[0];
+  if(lastSituation){
+    lastSituation.rows.forEach(r=>{
+      if(r.statut === 'ASM'){
+        const a = DATA.effectifs.agents.find(x=>x.id===r.agentId);
+        push('high', `${a ? (a.grade+' '+a.prenoms+' '+a.nom) : 'Élément'} : Absence Sans Motif relevée le ${fmtDate(lastSituation.date)}.`, 'Effectifs');
+      }
+    });
+  }
+  // Effectifs : situation journalière du jour non renseignée
+  if(DATA.effectifs.agents.length){
+    const todayStr = todayISO();
+    if(!lastSituation){
+      push('mid', `Aucune situation journalière n'a encore été renseignée.`, 'Effectifs');
+    } else if(lastSituation.date !== todayStr){
+      push('mid', `Situation journalière non renseignée pour aujourd'hui — dernière mise à jour : ${fmtDate(lastSituation.date)}.`, 'Effectifs');
+    }
+  }
+
+  return alerts.sort((a,b)=> (a.sev==='high'?0:1) - (b.sev==='high'?0:1));
+}
+
+/* ============================================================
+   Rendering — Overview
+   ============================================================ */
+function renderOverview(){
+  const alerts = computeAlerts();
+  const high = alerts.filter(a=>a.sev==='high').length;
+  const mid = alerts.filter(a=>a.sev==='mid').length;
+  const highRubs = new Set(alerts.filter(a=>a.sev==='high').map(a=>a.src)).size;
+
+  let html = '';
+  html += `<div class="page-head"><div><h2>Vue d'ensemble</h2><div class="desc">Situation consolidée — Maintenance, ${new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div></div></div>`;
+
+  html += `<div class="stat-strip">
+    <div class="stat-card ${high?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
+    <div class="stat-card"><div class="num">${RUBRIQUES.filter(r=>!EFFECTIFS_ONLY_RUBRIQUES.includes(r.key)).length}</div><div class="lbl">Rubriques maintenance</div></div>
+    <div class="stat-card ${high?'is-alert':''}"><div class="num">${highRubs}</div><div class="lbl">Rubriques en alerte</div></div>
+    <div class="stat-card"><div class="num">${mid}</div><div class="lbl">Points de vigilance</div></div>
+  </div>`;
+
+  html += `<div class="alerts-panel">
+    <div class="alerts-head"><h3>Alertes &amp; points de vigilance</h3>${alerts.length? `<span class="alert-count">${alerts.length}</span>`:''}</div>
+    <div class="alert-list">`;
+  if(alerts.length === 0){
+    html += `<div class="empty-note">Aucune alerte active. Tous les indicateurs sont dans les seuils.</div>`;
+  } else {
+    alerts.forEach(a=>{
+      html += `<div class="alert-row"><span class="alert-dot sev-${a.sev}"></span><span>${esc(a.text)}</span><span class="a-src">${esc(a.src)}</span></div>`;
+    });
+  }
+  html += `</div></div>`;
+
+  document.getElementById('app-root').innerHTML = wrapView(html);
+}
+
+/* ============================================================
+   Rendering — Maintenance
+   ============================================================ */
+function rubStatus(r){
+  const d = DATA.maintenance[r.key];
+  const a = computeAlerts().filter(x=>x.src===r.label);
+  if(a.some(x=>x.sev==='high')) return 'alert';
+  if(a.some(x=>x.sev==='mid')) return 'warn';
+  return 'ok';
+}
+
+/* ============================================================
+   Vue Administrateur — toutes les données actuellement enregistrées
+   dans l'appli, en temps réel (pas seulement ce qui part vers la
+   synchronisation). Protégée par le code administrateur, comme les
+   autres actions sensibles.
+   ============================================================ */
+function buildAdminSnapshot(){
+  // Copie profonde de l'état réel de l'appli à l'instant présent.
+  const clone = JSON.parse(JSON.stringify(DATA));
+  if(clone.settings){
+    if(clone.settings.appSecret) clone.settings.appSecret = '••••••••';
+  }
+  // Les pièces jointes (photos/PDF) des éléments sont résumées plutôt
+  // qu'affichées en entier : leur contenu brut (base64) rendrait
+  // l'aperçu illisible.
+  if(clone.effectifs && Array.isArray(clone.effectifs.agents)){
+    clone.effectifs.agents.forEach(a=>{
+      if(Array.isArray(a.pieces)){
+        a.pieces = a.pieces.map(p=> ({ id:p.id, name:p.name, mime:p.mime, size:p.size, dataUrl:'[donnée image/PDF non affichée ici]' }));
+      }
+    });
+  }
+  return clone;
+}
+
+function renderAdmin(){
+  let html = `<div class="page-head"><div><h2>Administrateur</h2><div class="desc">Toutes les données actuellement enregistrées dans l'appli, en temps réel</div></div></div>`;
+
+  if(!hasValidAdminSession()){
+    html += `<div class="empty-state">🔒 Cette section est réservée à l'administrateur.
+      <div style="margin-top:14px;"><button class="btn gold" id="btn-admin-unlock">Se connecter</button></div>
+    </div>`;
+    document.getElementById('app-root').innerHTML = wrapView(html);
+    return;
+  }
+
+  const snapshot = buildAdminSnapshot();
+  const alerts = computeAlerts();
+  const nbEntries = RUBRIQUES.reduce((s,r)=> s + ((DATA.maintenance[r.key] && DATA.maintenance[r.key].entries) ? DATA.maintenance[r.key].entries.length : 0), 0);
+
+  html += `<div class="settings-note" style="margin-bottom:16px;">Vue instantanée de tout ce qui est actuellement saisi dans l'appli — toutes les rubriques, tous les éléments et la situation du jour, à l'instant où tu ouvres cette page.</div>`;
+
+  html += `<div class="stat-strip" style="margin-bottom:20px;">
+    <div class="stat-card"><div class="num">${RUBRIQUES.length}</div><div class="lbl">Rubriques enregistrées</div></div>
+    <div class="stat-card"><div class="num">${nbEntries}</div><div class="lbl">Lignes de données</div></div>
+    <div class="stat-card"><div class="num">${DATA.effectifs.agents.length}</div><div class="lbl">Éléments (effectifs)</div></div>
+    <div class="stat-card ${alerts.length?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
+  </div>`;
+
+  html += renderAdminReadable(snapshot);
+
+  html += `<details class="responsibilities" style="margin-top:20px;">
+    <summary>Version technique (JSON) — pour export ou copie</summary>
+    <div class="settings-note" style="margin:10px 0;">Le secret d'application est masqué ci-dessous par sécurité (visible dans Paramètres si besoin) ; les photos/PDF joints aux éléments sont résumés (nom, taille) plutôt qu'affichés en entier.</div>
+    <pre class="code-block" id="admin-payload-json" style="max-height:520px;">${esc(JSON.stringify(snapshot, null, 2))}</pre>
+    <div class="row-actions" style="margin-top:8px;">
+      <button class="btn ghost" id="btn-admin-copy">Copier le JSON</button>
+      <button class="btn ghost" id="btn-admin-refresh">Rafraîchir l'aperçu</button>
+    </div>
+  </details>`;
+
+  document.getElementById('app-root').innerHTML = wrapView(html);
+}
+
+/* Affichage lisible (tableaux) des données de l'appli, dans le même style
+   que le reste du logiciel — pour un administrateur qui n'a pas à lire du
+   JSON pour comprendre ce qui est enregistré. */
+function renderAdminReadable(snapshot){
+  let html = '';
+
+  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Rubriques de maintenance</h3>`;
+  RUBRIQUES.forEach(r=>{
+    const d = snapshot.maintenance[r.key] || { responsable:'', suppleants:'', entries:[] };
+    html += `<div class="rub-card open" style="margin-bottom:14px;">
+      <div class="rub-head"><h3>${esc(r.label)}</h3></div>
+      <div class="rub-body">
+        <div class="resp-row" style="margin-bottom:10px;">
+          <div><b>Responsable</b> — ${esc(d.responsable || '—')}</div>
+          <div><b>Suppléant(s)</b> — ${esc(d.suppleants || '—')}</div>
+        </div>`;
+    if(d.entries && d.entries.length){
+      html += `<div class="table-wrap"><table><thead><tr>`;
+      r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
+      html += `</tr></thead><tbody>`;
+      d.entries.forEach(e=>{
+        html += `<tr>`;
+        r.entryCols.forEach(c=> html += `<td>${esc(e[c.key] != null && e[c.key] !== '' ? e[c.key] : '—')}</td>`);
+        html += `</tr>`;
+      });
+      html += `</tbody></table></div>`;
+    } else {
+      html += `<div class="settings-note">Aucune entrée dans cette rubrique.</div>`;
+    }
+    html += `</div></div>`;
+  });
+
+  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:24px 0 10px;">Éléments (effectifs)</h3>`;
+  if(snapshot.effectifs.agents.length){
+    html += `<div class="table-wrap"><table><thead><tr>
+      <th>Grade</th><th>Prénoms</th><th>Nom</th><th>ID / Matricule</th><th>Qualification</th><th>Parrainage</th>
+    </tr></thead><tbody>`;
+    snapshot.effectifs.agents.forEach(a=>{
+      html += `<tr>
+        <td>${esc(a.grade || '—')}</td><td>${esc(a.prenoms || '—')}</td><td>${esc(a.nom || '—')}</td>
+        <td class="mono">${esc(a.idNum || '—')}</td><td>${esc(a.qualification || '—')}</td>
+        <td>${[a.parrain?'Parrain':null, a.parraine?'Parrainé':null].filter(Boolean).join(' + ') || '—'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  } else {
+    html += `<div class="settings-note">Aucun élément enregistré.</div>`;
+  }
+
+  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:24px 0 10px;">Situation journalière</h3>`;
+  if(snapshot.effectifs.situations && snapshot.effectifs.situations.length){
+    html += `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Éléments renseignés</th></tr></thead><tbody>`;
+    snapshot.effectifs.situations.forEach(s=>{
+      html += `<tr><td>${fmtDate(s.date)}</td><td>${(s.rows && s.rows.length) || 0}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  } else {
+    html += `<div class="settings-note">Aucune situation journalière enregistrée.</div>`;
+  }
+
+  return html;
+}
+
+function renderMaintenance(){
+  let html = `<div class="page-head"><div><h2>Maintenance</h2><div class="desc">Rubriques de suivi — responsables, données et alertes</div></div></div>`;
+  html += `<div class="rub-grid">`;
+  RUBRIQUES.filter(r=> !EFFECTIFS_ONLY_RUBRIQUES.includes(r.key)).forEach(r=>{
+    const d = DATA.maintenance[r.key];
+    const open = OPEN_RUB === r.key;
+    const st = rubStatus(r);
+    const stLabel = st==='alert' ? 'Alerte' : st==='warn' ? 'Vigilance' : 'OK';
+    html += `<div class="rub-card ${open?'open':''}" data-rub="${r.key}">
+      <div class="rub-head" data-toggle-rub="${r.key}">
+        <h3>${esc(r.label)}</h3>
+        <div class="rub-badges">
+          <span class="badge ${st}">${stLabel}</span>
+          <span class="rub-toggle">▾</span>
+        </div>
+      </div>
+      <div class="rub-body">`;
+
+    html += `<details class="responsibilities"><summary>Responsabilités de la rubrique (${r.responsibilities.length})</summary><ul>`;
+    r.responsibilities.forEach(x=> html += `<li>${esc(x)}</li>`);
+    html += `</ul></details>`;
+
+    html += `<div class="resp-row">
+      <div class="field-group"><label>Responsable</label><input type="text" data-resp="${r.key}" data-field="responsable" value="${esc(d.responsable)}" placeholder="Nom, grade"></div>
+      <div class="field-group"><label>Suppléant(s)</label><input type="text" data-resp="${r.key}" data-field="suppleants" value="${esc(d.suppleants)}" placeholder="Nom(s)"></div>`;
+    r.extraFields.forEach(f=>{
+      html += `<div class="field-group"><label>${esc(f.label)}</label><input type="${f.type}" data-extra="${r.key}" data-field="${f.key}" value="${esc(d.extra[f.key]||'')}"></div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="table-wrap"><table><thead><tr>`;
+    r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
+    html += `<th></th></tr></thead><tbody>`;
+    if(!d.entries || d.entries.length===0){
+      html += `<tr><td colspan="${r.entryCols.length+1}" style="color:var(--ink-soft); font-style:italic;">Aucune entrée. Ajoutez la première ligne ci-dessous.</td></tr>`;
+    } else {
+      d.entries.forEach(e=>{
+        let rowClass = '';
+        if(r.key==='permissions'){ const fin=parseDate(e.fin); if(fin){ const restants=daysBetween(TODAY,fin); if(restants<0) rowClass='row-alert'; else if(restants<=2) rowClass='row-warn'; } }
+        if(r.key==='points_fixes'){ const last=parseDate(e.dernier_point_fixe); if(last){ const days=daysBetween(last,TODAY); if(days>21) rowClass='row-alert'; else if(days>=18) rowClass='row-warn'; } }
+        if(r.key==='batteries'){ const rec=parseDate(e.prochaine_recharge); if(rec && daysBetween(rec,TODAY)>0) rowClass='row-alert'; }
+        html += `<tr class="${rowClass}" data-entry-row="${r.key}" data-entry-id="${e.id}">`;
+        r.entryCols.forEach(c=>{
+          if(c.type==='select'){
+            html += `<td><select data-entry="${r.key}" data-eid="${e.id}" data-field="${c.key}">`;
+            c.options.forEach(o=> html += `<option value="${esc(o)}" ${e[c.key]===o?'selected':''}>${esc(o)}</option>`);
+            html += `</select></td>`;
+          } else {
+            html += `<td><input type="${c.type}" data-entry="${r.key}" data-eid="${e.id}" data-field="${c.key}" value="${esc(e[c.key]||'')}" ${c.min!==undefined?`min="${c.min}"`:''} ${c.max!==undefined?`max="${c.max}"`:''}></td>`;
+          }
+        });
+        html += `<td><button class="del-btn" data-del-entry="${r.key}" data-eid="${e.id}" title="Supprimer">&times;</button></td></tr>`;
+        // computed helper column info as extra row note for points_fixes / permissions
+      });
+    }
+    html += `</tbody></table></div>`;
+    html += `<div class="row-actions"><button class="add-row-btn" data-add-entry="${r.key}">+ Ajouter une ligne</button></div>`;
+
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  document.getElementById('app-root').innerHTML = wrapView(html);
+}
+
+/* ============================================================
+   Main render dispatcher
+   ============================================================ */
+/* ============================================================
+   Rendering — Effectifs
+   ============================================================ */
+function getOrCreateSituation(dateStr){
+  let s = DATA.effectifs.situations.find(x=>x.date===dateStr);
+  if(!s){
+    s = { id: uid(), date: dateStr, rows: [], pieces: [] };
+    DATA.effectifs.situations.push(s);
+  }
+  if(!Array.isArray(s.pieces)) s.pieces = [];
+  // ensure every registered agent has a row for this date
+  DATA.effectifs.agents.forEach(a=>{
+    if(!s.rows.find(r=>r.agentId===a.id)){
+      s.rows.push({ id: uid(), agentId: a.id, statut: 'Présent', motif:'', obs:'' });
+    }
+  });
+  // drop rows for agents no longer in the roster
+  s.rows = s.rows.filter(r=> DATA.effectifs.agents.some(a=>a.id===r.agentId));
+  return s;
+}
+
+function renderEffectifs(){
+  if(!EFFECTIFS_DATE) EFFECTIFS_DATE = todayISO();
+  let html = `<div class="page-head"><div><h2>Gestion des effectifs</h2><div class="desc">Répertoire du personnel et situation journalière (présent / permission / mission / stage / ASM)</div></div></div>`;
+
+  const permStatus = rubStatus(RUBRIQUES.find(r=>r.key==='permissions'));
+  const permBadge = permStatus !== 'ok' ? ` <span class="badge ${permStatus}">${permStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
+  const couleursStatus = rubStatus(RUBRIQUES.find(r=>r.key==='couleurs_presence'));
+  const couleursBadge = couleursStatus !== 'ok' ? ` <span class="badge ${couleursStatus}">${couleursStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
+  const ppvStatus = rubStatus(RUBRIQUES.find(r=>r.key==='ppv_groupe'));
+  const ppvBadge = ppvStatus !== 'ok' ? ` <span class="badge ${ppvStatus}">${ppvStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
+
+  html += `<div class="fiche-toolbar">
+    <button class="btn ${EFFECTIFS_SUBVIEW==='agents'?'gold':'ghost'}" data-eff-subview="agents">Répertoire des éléments</button>
+    <button class="btn ${EFFECTIFS_SUBVIEW==='situation'?'gold':'ghost'}" data-eff-subview="situation">Situation journalière</button>
+    <button class="btn ${EFFECTIFS_SUBVIEW==='permissions'?'gold':'ghost'}" data-eff-subview="permissions">Suivi des permissions${permBadge}</button>
+    <button class="btn ${EFFECTIFS_SUBVIEW==='couleurs'?'gold':'ghost'}" data-eff-subview="couleurs">Liste présence Couleurs${couleursBadge}</button>
+    <button class="btn ${EFFECTIFS_SUBVIEW==='ppv'?'gold':'ghost'}" data-eff-subview="ppv">Liste groupe PPV${ppvBadge}</button>
+  </div>`;
+
+  if(EFFECTIFS_SUBVIEW === 'agents'){
+    html += renderAgentsRoster();
+  } else if(EFFECTIFS_SUBVIEW === 'permissions'){
+    html += renderRubriqueEffectif('permissions');
+  } else if(EFFECTIFS_SUBVIEW === 'couleurs'){
+    html += renderRubriqueEffectif('couleurs_presence');
+  } else if(EFFECTIFS_SUBVIEW === 'ppv'){
+    html += renderRubriqueEffectif('ppv_groupe');
+  } else {
+    html += renderSituationJournaliere();
+  }
+
+  document.getElementById('app-root').innerHTML = wrapView(html);
+}
+
+function renderAgentsRoster(){
+  const agents = DATA.effectifs.agents;
+  let html = `<div class="row-actions" style="margin-bottom:14px;"><button class="add-row-btn" id="btn-new-agent">+ Ajouter un élément</button></div>`;
+  if(!agents.length){
+    html += `<div class="empty-state">Aucun élément enregistré. Clique sur « + Ajouter un élément » pour commencer.</div>`;
+    return html;
+  }
+  html += `<div class="table-wrap"><table><thead><tr>
+    <th>Grade</th><th>Prénoms</th><th>Nom</th><th>ID / Matricule</th><th>Qualification</th><th>Parrainage</th><th>Pièces</th><th></th>
+  </tr></thead><tbody>`;
+  agents.forEach(a=>{
+    html += `<tr>
+      <td>${esc(a.grade)}</td><td>${esc(a.prenoms)}</td><td>${esc(a.nom)}</td>
+      <td class="mono">${esc(a.idNum)}</td><td>${esc(a.qualification)}</td>
+      <td>${[a.parrain?'Parrain':null, a.parraine?'Parrainé':null].filter(Boolean).join(' + ') || '—'}</td>
+      <td>${(a.pieces && a.pieces.length) ? `📎 ${a.pieces.length}` : '—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="icon-btn" data-edit-agent="${a.id}">Modifier</button>
+        <button class="icon-btn" data-del-agent="${a.id}">Supprimer</button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+/* Rendu générique d'une rubrique (responsable/suppléants, champs extra, tableau
+   de lignes remplissable) affichée dans Gestion des effectifs plutôt que dans
+   la grille Maintenance. Utilisé pour Suivi des permissions, Présence Couleurs
+   et Groupe PPV — mêmes données et logique de rubrique que les autres, seul
+   l'endroit où elles s'affichent change. */
+function renderRubriqueEffectif(rubKey){
+  const r = RUBRIQUES.find(x=>x.key===rubKey);
+  const d = DATA.maintenance[rubKey];
+  const showRespRow = (rubKey !== 'couleurs_presence' && rubKey !== 'ppv_groupe');
+
+  let html = `<details class="responsibilities"><summary>Responsabilités de la rubrique (${r.responsibilities.length})</summary><ul>`;
+  r.responsibilities.forEach(x=> html += `<li>${esc(x)}</li>`);
+  html += `</ul></details>`;
+
+  if(showRespRow){
+    html += `<div class="resp-row">
+      <div class="field-group"><label>Responsable</label><input type="text" data-resp="${rubKey}" data-field="responsable" value="${esc(d.responsable)}"></div>
+      <div class="field-group"><label>Suppléant(s)</label><input type="text" data-resp="${rubKey}" data-field="suppleants" value="${esc(d.suppleants)}"></div>`;
+    r.extraFields.forEach(f=>{
+      html += `<div class="field-group"><label>${esc(f.label)}</label><input type="${f.type}" data-extra="${rubKey}" data-field="${f.key}" value="${esc(d.extra[f.key]||'')}"></div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="table-wrap"><table><thead><tr>`;
+  r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
+  html += `<th></th></tr></thead><tbody>`;
+  if(!d.entries || d.entries.length===0){
+    html += `<tr><td colspan="${r.entryCols.length+1}" style="color:var(--ink-soft); font-style:italic;">Aucune entrée. Ajoutez la première ligne ci-dessous.</td></tr>`;
+  } else {
+    d.entries.forEach(e=>{
+      let rowClass = '';
+      if(rubKey === 'permissions'){
+        const fin = parseDate(e.fin);
+        if(fin){ const restants = daysBetween(TODAY, fin); if(restants<0) rowClass='row-alert'; else if(restants<=2) rowClass='row-warn'; }
+      }
+      html += `<tr class="${rowClass}" data-entry-row="${rubKey}" data-entry-id="${e.id}">`;
+      r.entryCols.forEach(c=>{
+        if(c.type==='select'){
+          html += `<td><select data-entry="${rubKey}" data-eid="${e.id}" data-field="${c.key}">`;
+          c.options.forEach(o=> html += `<option value="${esc(o)}" ${e[c.key]===o?'selected':''}>${esc(o)}</option>`);
+          html += `</select></td>`;
+        } else {
+          html += `<td><input type="${c.type}" data-entry="${rubKey}" data-eid="${e.id}" data-field="${c.key}" value="${esc(e[c.key]||'')}" ${c.min!==undefined?`min="${c.min}"`:''} ${c.max!==undefined?`max="${c.max}"`:''}></td>`;
+        }
+      });
+      html += `<td><button class="del-btn" data-del-entry="${rubKey}" data-eid="${e.id}" title="Supprimer">&times;</button></td></tr>`;
+    });
+  }
+  html += `</tbody></table></div>`;
+  html += `<div class="row-actions"><button class="add-row-btn" data-add-entry="${rubKey}">+ Ajouter une ligne</button></div>`;
+  return html;
+}
+
+function renderSituationJournaliere(){
+  const s = getOrCreateSituation(EFFECTIFS_DATE);
+  const agents = DATA.effectifs.agents;
+
+  const counts = {};
+  EFFECTIF_STATUTS.forEach(st=> counts[st]=0);
+  s.rows.forEach(r=>{ if(counts[r.statut]!==undefined) counts[r.statut]++; });
+  const total = agents.length;
+  const present = counts['Présent'];
+  const permissionnaires = counts['PCD']+counts['PRLD']+counts['PTC'];
+  const absent = counts['ASM'];
+  const indisponible = counts['Mission']+counts['Stage']+counts['Indisponible'];
+
+  let html = `<div class="field-full" style="max-width:240px; margin-bottom:16px;">
+    <label>Date de la situation</label>
+    <input type="date" id="eff-date-picker" value="${esc(EFFECTIFS_DATE)}">
+  </div>`;
+
+  html += `<div class="stat-strip">
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Effectif réalisé</div></div>
+    <div class="stat-card"><div class="num">${present}</div><div class="lbl">Présent</div></div>
+    <div class="stat-card"><div class="num">${permissionnaires}</div><div class="lbl">En permission (PCD+PRLD+PTC)</div></div>
+    <div class="stat-card ${absent?'is-alert':''}"><div class="num">${absent}</div><div class="lbl">Absent (ASM)</div></div>
+  </div>`;
+
+  html += `<div class="table-wrap"><table><thead><tr>
+    <th>Grade</th><th>Prénoms</th><th>Nom</th><th>Statut</th><th>Motif</th><th>Observation</th>
+  </tr></thead><tbody>`;
+  if(!agents.length){
+    html += `<tr><td colspan="6" style="color:var(--ink-soft); font-style:italic;">Aucun élément enregistré — ajoute d'abord des éléments dans le Répertoire.</td></tr>`;
+  } else {
+    s.rows.forEach(row=>{
+      const a = agents.find(x=>x.id===row.agentId);
+      if(!a) return;
+      const rowClass = row.statut==='ASM' ? 'row-alert' : (row.statut!=='Présent' ? 'row-warn' : '');
+      html += `<tr class="${rowClass}">
+        <td>${esc(a.grade)}</td><td>${esc(a.prenoms)}</td><td>${esc(a.nom)}</td>
+        <td><select data-eff-row="${row.id}" data-field="statut">`;
+      EFFECTIF_STATUTS.forEach(st=> html += `<option value="${esc(st)}" ${row.statut===st?'selected':''}>${esc(EFFECTIF_STATUT_LABELS[st])}</option>`);
+      html += `</select></td>
+        <td><input type="text" data-eff-row="${row.id}" data-field="motif" value="${esc(row.motif)}" placeholder="Précision (n° décision, durée…)"></td>
+        <td><input type="text" data-eff-row="${row.id}" data-field="obs" value="${esc(row.obs)}"></td>
+      </tr>`;
+    });
+  }
+  html += `</tbody></table></div>`;
+
+  html += `<div class="table-wrap" style="margin-top:16px;"><table><thead><tr>
+    <th>PCD</th><th>PRLD</th><th>PTC</th><th>Mission</th><th>Stage</th><th>ASM</th><th>Indisponible</th><th>En service</th>
+  </tr></thead><tbody><tr>
+    <td>${counts['PCD']}</td><td>${counts['PRLD']}</td><td>${counts['PTC']}</td>
+    <td>${counts['Mission']}</td><td>${counts['Stage']}</td><td>${counts['ASM']}</td><td>${counts['Indisponible']}</td><td>${counts['En service']}</td>
+  </tr></tbody></table></div>`;
+
+  return html;
+}
+
+/* ---------- Pièces jointes d'un élément (photos / scans) ---------- */
+function formatFileSize(bytes){
+  if(!bytes) return '0 o';
+  if(bytes < 1024) return bytes + ' o';
+  if(bytes < 1024*1024) return Math.round(bytes/1024) + ' Ko';
+  return (bytes/(1024*1024)).toFixed(2) + ' Mo';
+}
+
+function renderAgentAttachList(pieces){
+  if(!pieces || !pieces.length){
+    return `<div class="empty-note" style="padding:10px 2px;">Aucun fichier importé pour cet élément.</div>`;
+  }
+  let html = `<div class="attach-grid">`;
+  pieces.forEach(p=>{
+    const isImg = (p.mime||'').startsWith('image/');
+    html += `<div class="attach-card">
+      ${isImg ? `<img src="${p.dataUrl}" class="attach-thumb" alt="${esc(p.name)}">` : `<div class="attach-file-icon">📄</div>`}
+      <div class="attach-meta">
+        <div class="attach-name" title="${esc(p.name)}">${esc(p.name)}</div>
+        <div class="attach-size mono">${formatFileSize(p.size)}</div>
+      </div>
+      <button type="button" class="del-btn" data-remove-agent-piece="${p.id}" title="Retirer ce fichier">✕</button>
+    </div>`;
+  });
+  html += `</div>`;
+  const total = pieces.reduce((s,p)=> s + (p.size||0), 0);
+  html += `<div class="settings-note">${pieces.length} fichier(s) — ${formatFileSize(total)} au total.</div>`;
+  return html;
+}
+
+function processAgentAttachmentFile(file){
+  const MAX_RAW = 8*1024*1024; // 8 Mo bruts avant compression
+  if(file.size > MAX_RAW){
+    alert(`Le fichier "${file.name}" est trop volumineux (max 8 Mo).`);
+    return;
+  }
+  if(file.type.startsWith('image/')){
+    compressImageFile(file, (dataUrl, size)=>{
+      AGENT_MODAL_PIECES.push({ id: uid(), name: file.name, mime:'image/jpeg', size, dataUrl });
+      renderAgentAttachListInModal();
+    });
+  } else if(file.type === 'application/pdf'){
+    const proceed = file.size <= 4*1024*1024 || window.confirm(`Le PDF "${file.name}" fait ${formatFileSize(file.size)}. Les documents volumineux ralentissent l'enregistrement et la synchronisation. Continuer quand même ?`);
+    if(!proceed) return;
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      AGENT_MODAL_PIECES.push({ id: uid(), name: file.name, mime:'application/pdf', size: file.size, dataUrl: e.target.result });
+      renderAgentAttachListInModal();
+    };
+    reader.onerror = ()=> alert(`Impossible de lire le fichier "${file.name}".`);
+    reader.readAsDataURL(file);
+  } else {
+    alert(`Type de fichier non pris en charge : "${file.name}". Seuls les images (JPG, PNG…) et les PDF sont acceptés.`);
+  }
+}
+
+function renderAgentAttachListInModal(){
+  const wrap = document.getElementById('agent-attach-list');
+  if(!wrap) return;
+  wrap.innerHTML = renderAgentAttachList(AGENT_MODAL_PIECES);
+  wrap.querySelectorAll('[data-remove-agent-piece]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      AGENT_MODAL_PIECES = AGENT_MODAL_PIECES.filter(p=>p.id!==btn.dataset.removeAgentPiece);
+      renderAgentAttachListInModal();
+    });
+  });
+}
+
+function compressImageFile(file, callback){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const MAX_DIM = 1600;
+      let w = img.width, h = img.height;
+      if(w > MAX_DIM || h > MAX_DIM){
+        if(w >= h){ h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+        else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+      const approxSize = Math.round(dataUrl.length * 3/4);
+      callback(dataUrl, approxSize);
+    };
+    img.onerror = ()=> alert(`Impossible de lire l'image "${file.name}".`);
+    img.src = e.target.result;
+  };
+  reader.onerror = ()=> alert(`Impossible de lire le fichier "${file.name}".`);
+  reader.readAsDataURL(file);
+}
+
+
+
+function wrapView(inner){ return inner; }
+
+function render(){
+  if(ACTIVE_VIEW==='overview') renderOverview();
+  else if(ACTIVE_VIEW==='maintenance') renderMaintenance();
+  else if(ACTIVE_VIEW==='effectifs') renderEffectifs();
+  else if(ACTIVE_VIEW==='admin') renderAdmin();
+  bindDynamicEvents();
+}
+
+function switchView(view){
+  ACTIVE_VIEW = view;
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.view===view));
+  render();
+}
+
+/* ============================================================
+   Modal — Agent editor
+   ============================================================ */
+function openAgentModal(agentId){
+  editingAgentId = agentId || null;
+  const a = agentId ? DATA.effectifs.agents.find(x=>x.id===agentId) : null;
+  AGENT_MODAL_PIECES = (a && Array.isArray(a.pieces)) ? a.pieces.map(p=> Object.assign({}, p)) : [];
+  document.getElementById('agent-modal-title').textContent = a ? `Modifier — ${a.prenoms} ${a.nom}` : 'Nouvel élément';
+
+  let body = '';
+  AGENT_FIELDS.forEach(f=>{
+    if(f.type === 'select'){
+      const cur = a ? (a[f.key]||'') : '';
+      body += `<div class="field-full"><label>${esc(f.label)}</label><select data-agent-field="${f.key}">`;
+      f.options.forEach(o=> body += `<option value="${esc(o)}" ${cur===o?'selected':''}>${esc(o)}</option>`);
+      body += `</select></div>`;
+    } else {
+      const val = esc(a ? (a[f.key]||'') : '');
+      body += `<div class="field-full"><label>${esc(f.label)}</label><input type="text" data-agent-field="${f.key}" value="${val}"></div>`;
+    }
+  });
+  body += `<div class="field-full">
+    <label>Parrainage</label>
+    <label class="check-row"><input type="checkbox" id="agent-field-parrain" ${a && a.parrain ? 'checked' : ''}> Parrain</label>
+    <label class="check-row"><input type="checkbox" id="agent-field-parraine" ${a && a.parraine ? 'checked' : ''}> Parrainé</label>
+  </div>`;
+  body += `<div class="field-full">
+    <label>Photo / document scanné</label>
+    <div class="settings-note" style="margin-bottom:6px;">Ex. photo d'identité, pièce d'identité ou document scanné concernant cet élément. Formats acceptés : images (JPG, PNG…) et PDF.</div>
+    <label class="btn ghost" for="agent-attach-input" style="align-self:flex-start;">+ Ajouter photo / document</label>
+    <input type="file" id="agent-attach-input" accept="image/*,application/pdf" multiple style="display:none;">
+    <div id="agent-attach-list" style="margin-top:10px;"></div>
+  </div>`;
+  document.getElementById('agent-modal-body').innerHTML = body;
+  renderAgentAttachListInModal();
+  document.getElementById('agent-attach-input').addEventListener('change', (e)=>{
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    files.forEach(file=> processAgentAttachmentFile(file));
+  });
+  document.getElementById('agent-modal-bg').classList.add('open');
+}
+function closeAgentModal(){
+  document.getElementById('agent-modal-bg').classList.remove('open');
+  editingAgentId = null;
+  AGENT_MODAL_PIECES = [];
+}
+function saveAgentFromModal(){
+  const payload = {};
+  document.querySelectorAll('#agent-modal-body [data-agent-field]').forEach(el=>{
+    payload[el.dataset.agentField] = el.value.trim();
+  });
+  const parrainEl = document.getElementById('agent-field-parrain');
+  const parraineEl = document.getElementById('agent-field-parraine');
+  payload.parrain = !!(parrainEl && parrainEl.checked);
+  payload.parraine = !!(parraineEl && parraineEl.checked);
+  payload.pieces = AGENT_MODAL_PIECES;
+  if(editingAgentId){
+    const a = DATA.effectifs.agents.find(x=>x.id===editingAgentId);
+    Object.assign(a, payload);
+  } else {
+    payload.id = uid();
+    DATA.effectifs.agents.push(payload);
+  }
+  saveData();
+  closeAgentModal();
+  render();
+}
+
+/* ============================================================
+   Dynamic event binding (re-bound after every render)
+   ============================================================ */
+/* Ramène une valeur numérique à la borne min/max définie pour ce champ (si
+   elle en a une), directement sur l'élément — appelée à chaque frappe et à
+   chaque changement, pour qu'une valeur hors bornes ne soit jamais enregistrée,
+   même transitoirement. */
+function clampEntryFieldIfNeeded(el, rub, field){
+  if(el.type !== 'number' || el.value === '') return;
+  const cfg = RUBRIQUES.find(r=>r.key===rub);
+  const colCfg = cfg && cfg.entryCols.find(c=>c.key===field);
+  if(!colCfg) return;
+  let num = Number(el.value);
+  if(isNaN(num)) return;
+  if(colCfg.min !== undefined && num < colCfg.min) num = colCfg.min;
+  if(colCfg.max !== undefined && num > colCfg.max) num = colCfg.max;
+  if(num !== Number(el.value)) el.value = num;
+}
+
+function bindDynamicEvents(){
+  // Administrateur : déverrouiller / copier / rafraîchir l'aperçu de la charge utile
+  const adminUnlockBtn = document.getElementById('btn-admin-unlock');
+  if(adminUnlockBtn) adminUnlockBtn.addEventListener('click', ()=> requireAdminAccess(()=> render()));
+  const adminCopyBtn = document.getElementById('btn-admin-copy');
+  if(adminCopyBtn) adminCopyBtn.addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(JSON.stringify(buildAdminSnapshot(), null, 2));
+      const original = adminCopyBtn.textContent;
+      adminCopyBtn.textContent = 'Copié !';
+      setTimeout(()=> adminCopyBtn.textContent = original, 1500);
+    }catch(e){
+      alert("Impossible de copier automatiquement. Sélectionne le texte manuellement.");
+    }
+  });
+  const adminRefreshBtn = document.getElementById('btn-admin-refresh');
+  if(adminRefreshBtn) adminRefreshBtn.addEventListener('click', ()=> render());
+
+  // Rubrique accordion
+  document.querySelectorAll('[data-toggle-rub]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const key = el.dataset.toggleRub;
+      OPEN_RUB = (OPEN_RUB === key) ? null : key;
+      render();
+    });
+  });
+
+  // Responsable / suppléant fields
+  document.querySelectorAll('[data-resp]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      DATA.maintenance[el.dataset.resp][el.dataset.field] = el.value;
+      saveData();
+    });
+  });
+  // Extra fields (per-rubrique special data)
+  document.querySelectorAll('[data-extra]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      DATA.maintenance[el.dataset.extra].extra[el.dataset.field] = el.value;
+      saveData();
+      refreshBadgesSoft();
+    });
+  });
+  // Entry table fields
+  document.querySelectorAll('[data-entry]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const rub = el.dataset.entry, id = el.dataset.eid, field = el.dataset.field;
+      const entry = DATA.maintenance[rub].entries.find(e=>e.id===id);
+      if(!entry) return;
+      clampEntryFieldIfNeeded(el, rub, field);
+      entry[field] = el.value; saveData();
+    });
+    el.addEventListener('change', ()=>{
+      const rub = el.dataset.entry, id = el.dataset.eid, field = el.dataset.field;
+      const entry = DATA.maintenance[rub].entries.find(e=>e.id===id);
+      if(!entry) return;
+      clampEntryFieldIfNeeded(el, rub, field);
+      entry[field] = el.value; saveData(); render();
+    });
+  });
+  // Add / delete entry rows
+  document.querySelectorAll('[data-add-entry]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const rub = el.dataset.addEntry;
+      const cfg = RUBRIQUES.find(r=>r.key===rub);
+      const newEntry = {id:uid()};
+      cfg.entryCols.forEach(c=> newEntry[c.key] = c.type==='date' ? todayISO() : '');
+      DATA.maintenance[rub].entries.push(newEntry);
+      OPEN_RUB = rub;
+      saveData();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-del-entry]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const rub = el.dataset.delEntry, id = el.dataset.eid;
+      DATA.maintenance[rub].entries = DATA.maintenance[rub].entries.filter(e=>e.id!==id);
+      OPEN_RUB = rub;
+      saveData();
+      render();
+    });
+  });
+
+  // Effectifs: sub-tabs
+  document.querySelectorAll('[data-eff-subview]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      EFFECTIFS_SUBVIEW = el.dataset.effSubview;
+      renderEffectifs(); bindDynamicEvents();
+    });
+  });
+  // Effectifs: date picker
+  const effDateEl = document.getElementById('eff-date-picker');
+  if(effDateEl) effDateEl.addEventListener('change', ()=>{
+    if(isValidISODate(effDateEl.value) && effDateEl.value){
+      EFFECTIFS_DATE = effDateEl.value;
+      renderEffectifs(); bindDynamicEvents();
+    }
+  });
+  // Effectifs: situation row fields
+  document.querySelectorAll('[data-eff-row]').forEach(el=>{
+    const update = ()=>{
+      // Recherche directe et légère : la situation du jour existe déjà (créée au
+      // rendu de la vue), pas besoin de relancer toute la réconciliation des
+      // lignes à chaque frappe — ça évite le ralentissement en tapant vite.
+      const s = DATA.effectifs.situations.find(x=>x.date===EFFECTIFS_DATE);
+      const row = s && s.rows.find(r=>r.id===el.dataset.effRow);
+      if(row){ row[el.dataset.field] = el.value; saveData(); }
+    };
+    el.addEventListener('input', update);
+    el.addEventListener('change', ()=>{ update(); renderEffectifs(); bindDynamicEvents(); });
+  });
+  // Effectifs: agents roster
+  const newAgentBtn = document.getElementById('btn-new-agent');
+  if(newAgentBtn) newAgentBtn.addEventListener('click', ()=> openAgentModal(null));
+  document.querySelectorAll('[data-edit-agent]').forEach(el=>{
+    el.addEventListener('click', ()=> openAgentModal(el.dataset.editAgent));
+  });
+  document.querySelectorAll('[data-del-agent]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      if(!confirm('Supprimer cet élément ? Ses lignes dans les situations journalières seront aussi retirées.')) return;
+      DATA.effectifs.agents = DATA.effectifs.agents.filter(a=>a.id!==el.dataset.delAgent);
+      DATA.effectifs.situations.forEach(s=>{ s.rows = s.rows.filter(r=>r.agentId!==el.dataset.delAgent); });
+      saveData();
+      renderEffectifs(); bindDynamicEvents();
+    });
+  });
+}
+
+function refreshBadgesSoft(){
+  document.querySelectorAll('.rub-card').forEach(card=>{
+    const key = card.dataset.rub;
+    const r = RUBRIQUES.find(x=>x.key===key);
+    const st = rubStatus(r);
+    const badge = card.querySelector('.rub-head .badge');
+    if(badge){ badge.className = `badge ${st}`; badge.textContent = st==='alert'?'Alerte':(st==='warn'?'Vigilance':'OK'); }
+  });
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=> switchView(b.dataset.view));
+});
+
+/* Global input validation — runs in the capture phase so it corrects the
+   field BEFORE any other change-handler (data binding, re-render) reads it. */
+document.addEventListener('change', function(e){
+  const t = e.target;
+  if(t && t.tagName === 'INPUT' && t.type === 'date'){
+    if(t.value && !isValidISODate(t.value)){
+      t.value = '';
+      t.classList.add('input-error');
+      setTimeout(()=> t.classList.remove('input-error'), 1800);
+      return;
+    }
+    // Cohérence début / fin : dans une même ligne (ex. Suivi des permissions),
+    // la date de fin ne peut pas être antérieure à la date de début.
+    if(t.dataset && (t.dataset.field === 'debut' || t.dataset.field === 'fin')){
+      const row = t.closest('tr');
+      if(row){
+        const debutEl = row.querySelector('[data-field="debut"]');
+        const finEl = row.querySelector('[data-field="fin"]');
+        if(debutEl && finEl && debutEl.value && finEl.value && finEl.value < debutEl.value){
+          alert('La date de fin ne peut pas être antérieure à la date de début.');
+          t.value = '';
+          t.classList.add('input-error');
+          setTimeout(()=> t.classList.remove('input-error'), 1800);
+        }
+      }
+    }
+  }
+  // Bornes min/max sur les champs numériques (ex. jours restants à prendre,
+  // plafonnés à 45) : la valeur saisie est automatiquement ramenée dans les
+  // bornes autorisées pour limiter les erreurs de remplissage.
+  if(t && t.tagName === 'INPUT' && t.type === 'number' && t.value !== '' && (t.getAttribute('min')!==null || t.getAttribute('max')!==null)){
+    const v = Number(t.value);
+    if(!isNaN(v)){
+      const min = t.getAttribute('min')!==null ? Number(t.getAttribute('min')) : null;
+      const max = t.getAttribute('max')!==null ? Number(t.getAttribute('max')) : null;
+      let corrected = null;
+      if(min!==null && v<min) corrected = min;
+      if(max!==null && v>max) corrected = max;
+      if(corrected!==null){
+        t.value = corrected;
+        t.classList.add('input-error');
+        setTimeout(()=> t.classList.remove('input-error'), 1800);
+      }
+    }
+  }
+}, true);
+
+document.getElementById('agent-modal-close').addEventListener('click', closeAgentModal);
+document.getElementById('agent-modal-cancel').addEventListener('click', closeAgentModal);
+document.getElementById('agent-modal-save').addEventListener('click', saveAgentFromModal);
+document.getElementById('agent-modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='agent-modal-bg') closeAgentModal(); });
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  requireAdminAccess(exportData);
+});
+document.getElementById('import-label').addEventListener('click', (e)=>{
+  if(!hasValidAdminSession()){
+    e.preventDefault();
+    requireAdminAccess(()=>{ document.getElementById('import-file').click(); });
+  }
+});
+document.getElementById('import-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importDataFromFile(file);
+  e.target.value = '';
+});
+document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
+document.getElementById('settings-modal-close').addEventListener('click', closeSettingsModal);
+document.getElementById('settings-modal-close-2').addEventListener('click', closeSettingsModal);
+document.getElementById('settings-modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='settings-modal-bg') closeSettingsModal(); });
+document.getElementById('btn-save-connection').addEventListener('click', saveConnectionFromSettings);
+document.getElementById('btn-test-sync').addEventListener('click', testBackendConnection);
+document.getElementById('btn-reset-data').addEventListener('click', resetAllData);
+document.getElementById('btn-send-admin-code').addEventListener('click', sendAdminLoginCode);
+document.getElementById('btn-verify-admin-code').addEventListener('click', verifyAdminLoginCode);
+document.getElementById('admin-email-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendAdminLoginCode(); });
+document.getElementById('admin-code-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') verifyAdminLoginCode(); });
+
+(async function init(){
+  await loadData();
+  render();
+  startAutoRefresh();
+})();
+
+</script>
+</body>
+</html>
