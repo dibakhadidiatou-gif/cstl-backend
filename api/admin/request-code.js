@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
     if (email) {
       const { data: allowed } = await supabase
-        .from('admin_emails')
+        .from('users')
         .select('email')
         .eq('email', email)
         .maybeSingle();
@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
       if (allowed) {
         // Un code emis il y a moins de RESEND_DELAY_MS est encore valable :
         // on n'en renvoie pas un nouveau. La reponse reste identique pour ne
-        // pas reveler si l'adresse est administrateur.
+        // pas reveler si l'adresse correspond a un compte.
         const { data: pending } = await supabase
           .from('admin_codes')
           .select('expires_at')

@@ -1,19 +1,17 @@
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret, verifyAdminToken } = require('../../lib/auth');
+const { applyCors, requireUser } = require('../../lib/auth');
 
 module.exports = async (req, res) => {
   if (applyCors(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'Methode non autorisee' }); return; }
-  if (!checkAppSecret(req)) { res.status(401).json({ ok: false, error: 'Secret application invalide' }); return; }
-
-  const session = verifyAdminToken(req);
-  if (!session) { res.status(401).json({ ok: false, error: 'Session administrateur requise ou expiree.' }); return; }
 
   try {
+    const supabase = getSupabase();
+    if (!(await requireUser(req, res, supabase, 'admin'))) return;
+
     const { id } = req.body || {};
     if (!id) { res.status(400).json({ ok: false, error: 'Identifiant de fiche manquant' }); return; }
 
-    const supabase = getSupabase();
     const { data: current, error: readErr } = await supabase.from('instruction_state').select('fiches').eq('id', 'main').maybeSingle();
     if (readErr) throw readErr;
 

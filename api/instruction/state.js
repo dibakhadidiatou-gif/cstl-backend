@@ -1,5 +1,5 @@
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret } = require('../../lib/auth');
+const { applyCors, requireUser } = require('../../lib/auth');
 
 // Fusionne intelligemment au lieu de remplacer : plus aucune perte de
 // donnees en cas d'ecriture concurrente par plusieurs personnes.
@@ -31,10 +31,10 @@ function mergeFiches(incoming, stored, deletedIds) {
 
 module.exports = async (req, res) => {
   if (applyCors(req, res)) return;
-  if (!checkAppSecret(req)) { res.status(401).json({ ok: false, error: 'Secret application invalide' }); return; }
 
   try {
     const supabase = getSupabase();
+    if (!(await requireUser(req, res, supabase, 'technicien'))) return;
 
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('instruction_state').select('fiches').eq('id', 'main').maybeSingle();

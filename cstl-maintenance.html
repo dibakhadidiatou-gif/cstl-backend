@@ -351,11 +351,11 @@
       </div>
 
       <div style="border-top:1px dashed var(--line); padding-top:14px; margin-top:4px;">
-        <div class="settings-note" style="margin-bottom:12px;">Connexion administrateur — nécessaire pour réinitialiser, exporter ou importer.</div>
+        <div class="settings-note" style="margin-bottom:12px;">Connexion — nécessaire pour réinitialiser, exporter ou importer.</div>
 
         <div id="admin-login-area">
           <div class="field-full">
-            <label>Adresse email administrateur</label>
+            <label>Adresse email</label>
             <input type="text" id="admin-email-input" placeholder="ton.email@exemple.com">
           </div>
           <div class="row-actions" style="margin-top:8px;">
@@ -374,9 +374,10 @@
         </div>
 
         <div id="admin-logged-in-area" style="display:none; flex-direction:column; gap:14px;">
-          <div class="settings-note">✓ Connecté en tant qu'administrateur (<span id="admin-logged-in-email" class="mono"></span>).</div>
-          <div class="field-full">
-            <label>Zone sensible</label>
+          <div class="settings-note">✓ Connecté : <span id="admin-logged-in-email" class="mono"></span> — <b id="admin-logged-in-role"></b></div>
+          <button class="btn ghost" id="btn-logout" style="align-self:flex-start;">Se déconnecter</button>
+          <div class="field-full" id="reset-zone">
+            <label>Zone sensible (super-administrateur)</label>
             <div class="settings-note">Efface définitivement <b>toutes les rubriques, tous les effectifs et toute la situation journalière</b> pour tout le monde. Action irréversible.</div>
             <button class="btn ghost" id="btn-reset-data" style="align-self:flex-start; border-color:var(--alert); color:var(--alert); margin-top:6px;">Réinitialiser toutes les données</button>
           </div>
@@ -634,9 +635,10 @@ let EFFECTIFS_SUBVIEW = 'agents'; // 'agents' | 'situation' | 'couleurs' | 'ppv'
 let EFFECTIFS_DATE = null; // set on first render to today
 let editingAgentId = null;
 let AGENT_MODAL_PIECES = []; // pièces jointes (photos/scans) en cours d'édition dans le modal élément
-let ADMIN_TOKEN = null;
-let ADMIN_TOKEN_EXPIRES = 0;
-let ADMIN_EMAIL_LOGGED_IN = '';
+let SESSION_TOKEN = null;
+let SESSION_EXPIRES = 0;
+let SESSION_EMAIL = '';
+let SESSION_ROLE = '';   // 'technicien' | 'admin' | 'superadmin'
 let PENDING_ADMIN_ACTION = null;
 
 /* ---------- Storage abstraction ----------
@@ -678,7 +680,7 @@ async function saveConnectionSettings(){
   await storageWrite(STORAGE_KEY, JSON.stringify({ backendUrl: DATA.settings.backendUrl, appSecret: DATA.settings.appSecret }));
 }
 
-/* Persistance de la session administrateur (jeton + expiration + email) —
+/* Persistance de la session utilisateur (jeton + expiration + email) —
    sans ça, recharger la page forcerait à se reconnecter à chaque fois, même
    en pleine session valide côté serveur. Stockée séparément des données
    métier, jamais envoyée au backend. */
@@ -690,27 +692,28 @@ async function loadAdminSession(){
     if(raw){
       const parsed = JSON.parse(raw);
       if(parsed && parsed.token && parsed.expires && Date.now() < parsed.expires){
-        ADMIN_TOKEN = parsed.token;
-        ADMIN_TOKEN_EXPIRES = parsed.expires;
-        ADMIN_EMAIL_LOGGED_IN = parsed.email || '';
+        SESSION_TOKEN = parsed.token;
+        SESSION_EXPIRES = parsed.expires;
+        SESSION_EMAIL = parsed.email || '';
+        SESSION_ROLE = parsed.role || '';
       }
     }
   }catch(e){ /* pas de session enregistrée */ }
 }
 
 async function saveAdminSession(){
-  await storageWrite(ADMIN_SESSION_KEY, JSON.stringify({ token: ADMIN_TOKEN, expires: ADMIN_TOKEN_EXPIRES, email: ADMIN_EMAIL_LOGGED_IN }));
+  await storageWrite(ADMIN_SESSION_KEY, JSON.stringify({ token: SESSION_TOKEN, expires: SESSION_EXPIRES, email: SESSION_EMAIL, role: SESSION_ROLE }));
 }
 
 /* Appel générique vers le backend Vercel. Ajoute automatiquement le secret
-   d'application, et le jeton de session administrateur si demandé (auth:true)
-   et disponible. */
+   d'application et le jeton de session de l'utilisateur connecté. Si le
+   serveur signale une session expirée (code SESSION), renvoie à la connexion. */
 async function backendFetch(path, opts = {}){
   const base = (DATA.settings && DATA.settings.backendUrl) ? DATA.settings.backendUrl.trim().replace(/\/+$/,'') : '';
   if(!base) throw new Error("URL du backend non configurée. Ouvre Paramètres pour la renseigner.");
   const headers = { 'Content-Type': 'application/json' };
   if(DATA.settings && DATA.settings.appSecret) headers['X-App-Secret'] = DATA.settings.appSecret;
-  if(opts.auth && ADMIN_TOKEN) headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
+  if(SESSION_TOKEN) headers['Authorization'] = 'Bearer ' + SESSION_TOKEN;
   const res = await fetch(base + path, {
     method: opts.method || 'GET',
     headers,
@@ -718,6 +721,7 @@ async function backendFetch(path, opts = {}){
   });
   let data = null;
   try{ data = await res.json(); }catch(e){ /* reponse non-JSON, restera null */ }
+  if(res.status === 401 && data && data.code === 'SESSION' && SESSION_TOKEN) onSessionLost(data.error);
   return { status: res.status, ok: res.ok, data };
 }
 
@@ -736,8 +740,22 @@ async function loadData(){
     return;
   }
 
+  if(!hasValidSession()){
+    setSaveIndicator('idle', 'Connexion requise');
+    return;
+  }
+
   setSaveIndicator('saving', 'Chargement…');
   try{
+    // Le rôle a pu changer depuis la connexion : on le relit sur le serveur.
+    const me = await backendFetch('/api/admin/me', { method:'GET' });
+    if(me.data && me.data.ok){
+      SESSION_ROLE = me.data.role;
+      SESSION_EMAIL = me.data.email;
+      await saveAdminSession();
+    }
+    if(!hasValidSession()){ setSaveIndicator('idle', 'Connexion requise'); return; }
+
     const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
     if(ok && data && data.ok){
       RUBRIQUES.forEach(r=>{ if(!data.maintenance[r.key]) data.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
@@ -840,7 +858,7 @@ let autoRefreshTimer = null;
 function startAutoRefresh(){
   clearInterval(autoRefreshTimer);
   autoRefreshTimer = setInterval(async ()=>{
-    if(!DATA || !DATA.settings.backendUrl) return;
+    if(!DATA || !DATA.settings.backendUrl || !hasValidSession()) return;
     if(document.querySelector('.modal-bg.open')) return;
     try{
       const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
@@ -928,17 +946,47 @@ function closeSettingsModal(){
   PENDING_ADMIN_ACTION = null;
 }
 
-function hasValidAdminSession(){
-  return !!ADMIN_TOKEN && Date.now() < ADMIN_TOKEN_EXPIRES;
+function hasValidSession(){
+  return !!SESSION_TOKEN && Date.now() < SESSION_EXPIRES;
+}
+
+/* Rôles, du moins au plus élevé : chaque rôle peut faire tout ce que
+   peuvent faire les rôles inférieurs. Le serveur applique les mêmes règles :
+   ces vérifications ne servent qu'à adapter l'affichage. */
+const ROLE_RANK = { technicien: 1, admin: 2, superadmin: 3 };
+const ROLE_LABELS = { technicien: 'Technicien', admin: 'Administrateur', superadmin: 'Super-administrateur' };
+
+function hasRole(minRole){
+  return hasValidSession() && (ROLE_RANK[SESSION_ROLE] || 0) >= ROLE_RANK[minRole];
+}
+
+async function endSession(){
+  SESSION_TOKEN = null; SESSION_EXPIRES = 0; SESSION_ROLE = '';
+  USER_LIST = null;
+  await saveAdminSession();
+}
+
+/* Appelé par backendFetch quand le serveur signale une session expirée ou
+   un compte retiré : on revient à l'écran de connexion. */
+async function onSessionLost(message){
+  await endSession();
+  render();
+  alert((message || 'Session expirée.') + '\nReconnecte-toi depuis Paramètres.');
+}
+
+function logout(){
+  endSession().then(()=>{ closeSettingsModal(); render(); });
 }
 
 function renderAdminLoginState(){
   const loginArea = document.getElementById('admin-login-area');
   const loggedInArea = document.getElementById('admin-logged-in-area');
-  if(hasValidAdminSession()){
+  if(hasValidSession()){
     loginArea.style.display = 'none';
     loggedInArea.style.display = 'flex';
-    document.getElementById('admin-logged-in-email').textContent = ADMIN_EMAIL_LOGGED_IN || '—';
+    document.getElementById('admin-logged-in-email').textContent = SESSION_EMAIL || '—';
+    document.getElementById('admin-logged-in-role').textContent = ROLE_LABELS[SESSION_ROLE] || '—';
+    document.getElementById('reset-zone').style.display = hasRole('superadmin') ? '' : 'none';
   } else {
     loginArea.style.display = 'block';
     loggedInArea.style.display = 'none';
@@ -975,12 +1023,15 @@ async function verifyAdminLoginCode(){
   try{
     const { ok, data } = await backendFetch('/api/admin/verify-code', { method:'POST', body:{ email, code } });
     if(ok && data && data.ok && data.token){
-      ADMIN_TOKEN = data.token;
-      ADMIN_TOKEN_EXPIRES = Date.now() + 23.5 * 60 * 60 * 1000; // un peu sous les 24h serveur, marge de sécurité
-      ADMIN_EMAIL_LOGGED_IN = email;
-      ADMIN_LIST = null; // recharger la liste pour ce nouvel admin
+      SESSION_TOKEN = data.token;
+      SESSION_EXPIRES = Date.now() + 23.5 * 60 * 60 * 1000; // un peu sous les 24h serveur, marge de sécurité
+      SESSION_EMAIL = data.email || email;
+      SESSION_ROLE = data.role || '';
+      USER_LIST = null; // recharger la liste pour ce nouveau compte
       await saveAdminSession();
       renderAdminLoginState();
+      await loadData();
+      render();
       const pending = PENDING_ADMIN_ACTION; PENDING_ADMIN_ACTION = null;
       if(pending) pending();
     } else {
@@ -995,28 +1046,33 @@ async function verifyAdminLoginCode(){
    exporter, importer). Si une session valide existe déjà, exécute directement
    la fonction fournie ; sinon, ouvre les réglages pour se connecter, puis
    exécute automatiquement l'action une fois la connexion réussie. */
-function requireAdminAccess(afterLoginFn){
-  if(hasValidAdminSession()){ afterLoginFn(); return; }
+function requireRole(minRole, afterLoginFn){
+  if(hasRole(minRole)){ afterLoginFn(); return; }
+  if(hasValidSession()){
+    alert(`Action réservée aux comptes ${ROLE_LABELS[minRole]}${minRole === 'superadmin' ? '' : ' (ou plus)'}.`);
+    return;
+  }
   if(!DATA.settings.backendUrl){
-    alert("Renseigne d'abord la connexion au backend dans Paramètres avant de te connecter en tant qu'administrateur.");
+    alert("Renseigne d'abord la connexion au backend dans Paramètres avant de te connecter.");
     openSettingsModal();
     return;
   }
-  PENDING_ADMIN_ACTION = afterLoginFn;
-  alert("Connexion administrateur requise pour cette action — renseigne ton email pour recevoir un code.");
+  // Après connexion, on revérifie le rôle avant d'exécuter l'action.
+  PENDING_ADMIN_ACTION = ()=> requireRole(minRole, afterLoginFn);
+  alert("Connexion requise — renseigne ton email pour recevoir un code.");
   openSettingsModal();
 }
 
 /* Réinitialisation complète, pour tout le monde (le backend est la source de
    vérité partagée). Action irréversible, réservée à l'administrateur connecté. */
 function resetAllData(){
-  requireAdminAccess(async ()=>{
+  requireRole('superadmin', async ()=>{
     const ok = window.confirm("Cette action supprime définitivement TOUTES les rubriques, tous les effectifs et toute la situation journalière, pour tout le monde.\n\nContinuer ?");
     if(!ok) return;
     const typed = window.prompt('Pour confirmer, tape RESET (en majuscules) puis valide :');
     if(typed !== 'RESET'){ alert('Réinitialisation annulée.'); return; }
     try{
-      const { ok: httpOk, data } = await backendFetch('/api/maintenance/reset', { method:'POST', auth:true });
+      const { ok: httpOk, data } = await backendFetch('/api/maintenance/reset', { method:'POST' });
       if(httpOk && data && data.ok){
         DATA.maintenance = defaultData().maintenance;
         DATA.effectifs = { agents: [], situations: [] };
@@ -1248,131 +1304,255 @@ function buildAdminSnapshot(){
 }
 
 /* ============================================================
-   Gestion des administrateurs (onglet Administrateur) — ajouter ou
-   retirer un admin sans passer par le SQL Editor de Supabase.
+   Gestion des comptes (onglet Administrateur) — créer, retirer ou changer
+   le rôle d'un compte sans passer par le SQL Editor de Supabase.
+   Un super-administrateur gère tous les comptes ; un administrateur ne
+   gère que les techniciens. Le serveur applique les mêmes règles.
    La liste et la saisie en cours sont gardées en mémoire pour survivre
    à l'actualisation automatique (toutes les 30 s) qui redessine la vue.
    ============================================================ */
-let ADMIN_LIST = null;          // null = pas encore chargée
-let ADMIN_LIST_LOADING = false;
-let ADMIN_MANAGE_NOTE = '';
-let ADMIN_NEW_EMAIL_DRAFT = '';
-let ADMIN_NEW_EMAIL_FOCUSED = false;
+let USER_LIST = null;          // null = pas encore chargée
+let USER_LIST_LOADING = false;
+let USER_MANAGE_NOTE = '';
+let USER_NEW_EMAIL_DRAFT = '';
+let USER_NEW_ROLE_DRAFT = 'technicien';
+let USER_NEW_EMAIL_FOCUSED = false;
 
-function renderAdminManagement(){
-  let html = `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Gestion des administrateurs</h3>`;
-  html += `<div class="settings-note" style="margin-bottom:12px;">L'effet est immédiat : une adresse ajoutée peut demander son code de connexion tout de suite. Saisis l'adresse en minuscules, exactement comme la personne la tapera pour se connecter.</div>`;
+function canManageRole(targetRole){
+  if(SESSION_ROLE === 'superadmin') return true;
+  return SESSION_ROLE === 'admin' && targetRole === 'technicien';
+}
+
+function manageableRoles(){
+  return Object.keys(ROLE_RANK).filter(canManageRole);
+}
+
+function roleOptions(selected){
+  return manageableRoles().map(r=> `<option value="${r}" ${r===selected?'selected':''}>${esc(ROLE_LABELS[r])}</option>`).join('');
+}
+
+function renderUserManagement(){
+  let html = `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Gestion des comptes</h3>`;
+  html += `<div class="settings-note" style="margin-bottom:12px;">L'effet est immédiat : une adresse ajoutée peut demander son code de connexion tout de suite, et un compte retiré perd l'accès à sa prochaine action.${SESSION_ROLE === 'admin' ? ' En tant qu\'administrateur, tu peux gérer les comptes techniciens.' : ''}</div>`;
+  if(!manageableRoles().includes(USER_NEW_ROLE_DRAFT)) USER_NEW_ROLE_DRAFT = 'technicien';
   html += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-    <input type="text" id="admin-new-email" placeholder="nouvelle.adresse@exemple.com" value="${esc(ADMIN_NEW_EMAIL_DRAFT)}" style="flex:1; min-width:220px;">
-    <button class="btn gold" id="btn-admin-add">Ajouter l'administrateur</button>
+    <input type="text" id="user-new-email" placeholder="nouvelle.adresse@exemple.com" value="${esc(USER_NEW_EMAIL_DRAFT)}" style="flex:1; min-width:220px;">
+    <select id="user-new-role">${roleOptions(USER_NEW_ROLE_DRAFT)}</select>
+    <button class="btn gold" id="btn-user-add">Créer le compte</button>
   </div>`;
-  if(ADMIN_MANAGE_NOTE) html += `<div class="settings-note" style="margin-bottom:12px;">${esc(ADMIN_MANAGE_NOTE)}</div>`;
+  html += `<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <label class="btn ghost" for="user-csv-file" style="cursor:pointer;">Importer un CSV</label>
+    <input type="file" id="user-csv-file" accept=".csv,text/csv,text/plain" style="display:none;">
+    <button class="btn ghost" id="btn-user-csv-template">Télécharger un modèle</button>
+    <span style="flex:1; min-width:220px; font-size:12px; color:var(--ink-soft);">Pour ajouter beaucoup de comptes d'un coup : une adresse par ligne, colonne « role » facultative (technicien par défaut). Séparateur virgule ou point-virgule, comme l'enregistre Excel.</span>
+  </div>`;
+  if(USER_MANAGE_NOTE) html += `<div class="settings-note" style="margin-bottom:12px; white-space:pre-line;">${esc(USER_MANAGE_NOTE)}</div>`;
 
-  if(ADMIN_LIST === null){
+  if(USER_LIST === null){
     html += `<div class="settings-note">Chargement de la liste…</div>`;
     return html;
   }
-  const me = (ADMIN_EMAIL_LOGGED_IN || '').trim().toLowerCase();
-  html += `<div class="table-wrap"><table><thead><tr><th>Adresse</th><th>Ajouté le</th><th></th></tr></thead><tbody>`;
-  ADMIN_LIST.forEach(a=>{
-    const isMe = (a.email || '').toLowerCase() === me;
-    const added = a.added_at ? new Date(a.added_at).toLocaleDateString('fr-FR') : '—';
+  const me = (SESSION_EMAIL || '').trim().toLowerCase();
+  html += `<div class="table-wrap"><table><thead><tr><th>Adresse</th><th>Rôle</th><th>Créé par</th><th>Ajouté le</th><th></th></tr></thead><tbody>`;
+  USER_LIST.forEach(u=>{
+    const isMe = (u.email || '').toLowerCase() === me;
+    const editable = !isMe && canManageRole(u.role);
+    const added = u.added_at ? new Date(u.added_at).toLocaleDateString('fr-FR') : '—';
+    const roleCell = (editable && SESSION_ROLE === 'superadmin')
+      ? `<select class="user-role-select" data-email="${esc(u.email)}" data-current="${esc(u.role)}">${roleOptions(u.role)}</select>`
+      : esc(ROLE_LABELS[u.role] || u.role);
     html += `<tr>
-      <td class="mono">${esc(a.email)}${isMe ? ' <em>(vous)</em>' : ''}</td>
+      <td class="mono">${esc(u.email)}${isMe ? ' <em>(vous)</em>' : ''}</td>
+      <td>${roleCell}</td>
+      <td class="mono">${esc(u.created_by || '—')}</td>
       <td>${esc(added)}</td>
-      <td>${isMe ? '' : `<button class="btn ghost admin-remove-btn" data-email="${esc(a.email)}">Retirer</button>`}</td>
+      <td>${editable ? `<button class="btn ghost user-remove-btn" data-email="${esc(u.email)}">Retirer</button>` : ''}</td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
-  html += `<div class="row-actions" style="margin-top:8px;"><button class="btn ghost" id="btn-admin-list-refresh">Rafraîchir la liste</button></div>`;
+  html += `<div class="row-actions" style="margin-top:8px;"><button class="btn ghost" id="btn-user-list-refresh">Rafraîchir la liste</button></div>`;
   return html;
 }
 
-/* Applique une réponse de /api/admin/admins. Une session expirée ou une
-   adresse qui n'est plus admin ramène à l'écran de connexion. */
-function applyAdminListResponse(status, data){
-  if(status === 401 || status === 403){
-    ADMIN_TOKEN = null; ADMIN_TOKEN_EXPIRES = 0;
-    saveAdminSession();
-    ADMIN_LIST = null;
-    ADMIN_MANAGE_NOTE = '';
-    alert((data && data.error) || 'Session administrateur expirée. Reconnecte-toi.');
-    return false;
-  }
+/* Applique une réponse de /api/admin/users. Une session expirée est déjà
+   gérée par backendFetch ; ici on n'affiche que le résultat ou l'erreur. */
+function applyUserListResponse(status, data){
   if(data && data.ok){
-    ADMIN_LIST = data.admins || [];
+    USER_LIST = data.users || [];
     return true;
   }
-  ADMIN_MANAGE_NOTE = '⚠ ' + ((data && data.error) || 'Erreur inattendue.');
-  if(ADMIN_LIST === null) ADMIN_LIST = [];
+  USER_MANAGE_NOTE = '⚠ ' + ((data && data.error) || 'Erreur inattendue.');
+  if(USER_LIST === null) USER_LIST = [];
   return false;
 }
 
-async function loadAdminList(){
-  if(ADMIN_LIST_LOADING) return;
-  ADMIN_LIST_LOADING = true;
+async function loadUserList(){
+  if(USER_LIST_LOADING) return;
+  USER_LIST_LOADING = true;
   try{
-    const { status, data } = await backendFetch('/api/admin/admins', { method:'GET', auth:true });
-    applyAdminListResponse(status, data);
+    const { status, data } = await backendFetch('/api/admin/users', { method:'GET' });
+    applyUserListResponse(status, data);
   }catch(e){
-    ADMIN_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
-    if(ADMIN_LIST === null) ADMIN_LIST = [];
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    if(USER_LIST === null) USER_LIST = [];
   }
-  ADMIN_LIST_LOADING = false;
+  USER_LIST_LOADING = false;
   if(ACTIVE_VIEW === 'admin') render();
 }
 
-async function adminManageAction(action, email){
+async function userManageAction(action, email, role){
   try{
-    const { status, data } = await backendFetch('/api/admin/admins', { method:'POST', auth:true, body:{ action, email } });
-    if(applyAdminListResponse(status, data)){
+    const { status, data } = await backendFetch('/api/admin/users', { method:'POST', body:{ action, email, role } });
+    if(applyUserListResponse(status, data)){
       if(action === 'add'){
-        ADMIN_NEW_EMAIL_DRAFT = '';
-        ADMIN_MANAGE_NOTE = `✓ ${email} est maintenant administrateur.`;
+        USER_NEW_EMAIL_DRAFT = '';
+        USER_MANAGE_NOTE = `✓ Compte ${ROLE_LABELS[role]} créé pour ${email}.`;
+      } else if(action === 'set_role'){
+        USER_MANAGE_NOTE = `✓ ${email} est maintenant ${ROLE_LABELS[role]}.`;
       } else {
-        ADMIN_MANAGE_NOTE = `✓ ${email} n'est plus administrateur. Une session déjà ouverte reste valable jusqu'à 24 h.`;
+        USER_MANAGE_NOTE = `✓ Le compte ${email} a été retiré.`;
       }
     }
   }catch(e){
-    ADMIN_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
   }
   render();
 }
 
-function bindAdminManagementEvents(){
-  const input = document.getElementById('admin-new-email');
-  if(input){
-    input.addEventListener('input', ()=>{ ADMIN_NEW_EMAIL_DRAFT = input.value; });
-    input.addEventListener('focus', ()=>{ ADMIN_NEW_EMAIL_FOCUSED = true; });
-    input.addEventListener('blur', ()=>{ ADMIN_NEW_EMAIL_FOCUSED = false; });
-    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') document.getElementById('btn-admin-add').click(); });
-    // L'actualisation automatique redessine la vue : on rend le focus si la personne était en train de taper.
-    if(ADMIN_NEW_EMAIL_FOCUSED){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+/* ---------- Import CSV de comptes ----------
+   Accepte un export Excel ou un fichier écrit à la main : séparateur virgule
+   ou point-virgule, ligne d'en-tête facultative, colonnes en plus (nom,
+   prénom…) ignorées. Sans en-tête, l'adresse est la première cellule qui
+   contient un @ et le rôle la première cellule qui en est un. */
+const MAX_CSV_USERS = 500;
+const CSV_ROLE_ALIASES = {
+  'technicien':'technicien', 'technicienne':'technicien', 'tech':'technicien',
+  'admin':'admin', 'administrateur':'admin', 'administratrice':'admin',
+  'superadmin':'superadmin', 'super-admin':'superadmin', 'super admin':'superadmin',
+  'super-administrateur':'superadmin', 'super administrateur':'superadmin', 'super-administratrice':'superadmin'
+};
+
+function parseUsersCsv(text){
+  const lines = text.replace(/^﻿/, '').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length) return [];
+  const sep = lines[0].split(';').length > lines[0].split(',').length ? ';' : ',';
+  const cellsOf = (line)=> line.split(sep).map(c=> c.trim().replace(/^"(.*)"$/, '$1').trim());
+  const plain = (c)=> c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  let emailCol = -1, roleCol = -1, start = 0;
+  const head = cellsOf(lines[0]).map(plain);
+  if(!head.some(c=> c.includes('@'))){
+    start = 1;
+    emailCol = head.findIndex(c=> c.includes('mail'));
+    roleCol = head.findIndex(c=> c === 'role' || c === 'roles' || c === 'profil');
   }
-  const addBtn = document.getElementById('btn-admin-add');
+
+  return lines.slice(start).map(line=>{
+    const cells = cellsOf(line);
+    const email = emailCol >= 0 ? (cells[emailCol] || '') : (cells.find(c=> c.includes('@')) || cells[0] || '');
+    const rawRole = roleCol >= 0 ? plain(cells[roleCol] || '') : (cells.map(plain).find(c=> CSV_ROLE_ALIASES[c]) || '');
+    // Un rôle inconnu est transmis tel quel : le serveur l'indiquera dans le rapport.
+    const role = rawRole ? (CSV_ROLE_ALIASES[rawRole] || rawRole) : 'technicien';
+    return { email: email.toLowerCase(), role };
+  });
+}
+
+async function importUsersCsv(file){
+  const text = await file.text().catch(()=>null);
+  if(!text){ alert('Impossible de lire ce fichier.'); return; }
+  const rows = parseUsersCsv(text);
+  if(!rows.length){ alert('Aucune ligne trouvée dans ce fichier.'); return; }
+  if(rows.length > MAX_CSV_USERS){ alert(`Ce fichier contient ${rows.length} lignes : maximum ${MAX_CSV_USERS} par import. Découpe-le en plusieurs fichiers.`); return; }
+
+  const byRole = {};
+  rows.forEach(r=>{ byRole[r.role] = (byRole[r.role] || 0) + 1; });
+  const summary = Object.entries(byRole).map(([r, n])=> `• ${n} × ${ROLE_LABELS[r] || r}`).join('\n');
+  if(!confirm(`Créer ${rows.length} compte(s) à partir de ce fichier ?\n\n${summary}\n\nLes lignes invalides ou déjà existantes seront ignorées et listées après l'import.`)) return;
+
+  USER_MANAGE_NOTE = 'Import en cours…';
+  render();
+  try{
+    const { data } = await backendFetch('/api/admin/users', { method:'POST', body:{ action:'bulk_add', users: rows } });
+    if(data && data.ok){
+      USER_LIST = data.users || USER_LIST;
+      let note = `✓ ${data.added.length} compte(s) créé(s).`;
+      if(data.skipped.length){
+        note += `\n⚠ ${data.skipped.length} ligne(s) ignorée(s) :\n` + data.skipped.map(s=> `• ${s.email || '(vide)'} — ${s.reason}`).join('\n');
+      }
+      USER_MANAGE_NOTE = note;
+    } else {
+      USER_MANAGE_NOTE = '⚠ ' + ((data && data.error) || "Échec de l'import.");
+    }
+  }catch(e){
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+  }
+  render();
+}
+
+function downloadUsersCsvTemplate(){
+  const csv = '﻿email;role\nprenom.nom@exemple.com;technicien\nautre.personne@exemple.com;technicien\n';
+  const url = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'modele-comptes.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function bindUserManagementEvents(){
+  const csvInput = document.getElementById('user-csv-file');
+  if(csvInput) csvInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(file) importUsersCsv(file);
+  });
+  const templateBtn = document.getElementById('btn-user-csv-template');
+  if(templateBtn) templateBtn.addEventListener('click', downloadUsersCsvTemplate);
+  const input = document.getElementById('user-new-email');
+  if(input){
+    input.addEventListener('input', ()=>{ USER_NEW_EMAIL_DRAFT = input.value; });
+    input.addEventListener('focus', ()=>{ USER_NEW_EMAIL_FOCUSED = true; });
+    input.addEventListener('blur', ()=>{ USER_NEW_EMAIL_FOCUSED = false; });
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') document.getElementById('btn-user-add').click(); });
+    // L'actualisation automatique redessine la vue : on rend le focus si la personne était en train de taper.
+    if(USER_NEW_EMAIL_FOCUSED){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  }
+  const roleSelect = document.getElementById('user-new-role');
+  if(roleSelect) roleSelect.addEventListener('change', ()=>{ USER_NEW_ROLE_DRAFT = roleSelect.value; });
+  const addBtn = document.getElementById('btn-user-add');
   if(addBtn) addBtn.addEventListener('click', ()=>{
-    const email = ADMIN_NEW_EMAIL_DRAFT.trim().toLowerCase();
+    const email = USER_NEW_EMAIL_DRAFT.trim().toLowerCase();
     if(!email) return;
     addBtn.disabled = true;
-    adminManageAction('add', email);
+    userManageAction('add', email, USER_NEW_ROLE_DRAFT);
   });
-  document.querySelectorAll('.admin-remove-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const email = btn.dataset.email;
-      if(!confirm(`Retirer ${email} des administrateurs ?\n\nSi cette personne est déjà connectée, sa session reste valable jusqu'à 24 h.`)) return;
-      btn.disabled = true;
-      adminManageAction('remove', email);
+  document.querySelectorAll('.user-role-select').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const email = sel.dataset.email;
+      if(!confirm(`Passer ${email} au rôle ${ROLE_LABELS[sel.value]} ?`)){ sel.value = sel.dataset.current; return; }
+      sel.disabled = true;
+      userManageAction('set_role', email, sel.value);
     });
   });
-  const refreshBtn = document.getElementById('btn-admin-list-refresh');
-  if(refreshBtn) refreshBtn.addEventListener('click', ()=>{ ADMIN_LIST = null; ADMIN_MANAGE_NOTE = ''; render(); });
+  document.querySelectorAll('.user-remove-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const email = btn.dataset.email;
+      if(!confirm(`Retirer le compte ${email} ?\n\nLa personne perdra l'accès dès sa prochaine action.`)) return;
+      btn.disabled = true;
+      userManageAction('remove', email);
+    });
+  });
+  const refreshBtn = document.getElementById('btn-user-list-refresh');
+  if(refreshBtn) refreshBtn.addEventListener('click', ()=>{ USER_LIST = null; USER_MANAGE_NOTE = ''; render(); });
 }
 
 function renderAdmin(){
   let html = `<div class="page-head"><div><h2>Administrateur</h2><div class="desc">Toutes les données actuellement enregistrées dans l'appli, en temps réel</div></div></div>`;
 
-  if(!hasValidAdminSession()){
-    html += `<div class="empty-state">🔒 Cette section est réservée à l'administrateur.
+  if(!hasRole('admin')){
+    html += `<div class="empty-state">🔒 Cette section est réservée aux administrateurs.
       <div style="margin-top:14px;"><button class="btn gold" id="btn-admin-unlock">Se connecter</button></div>
     </div>`;
     document.getElementById('app-root').innerHTML = wrapView(html);
@@ -1392,8 +1572,8 @@ function renderAdmin(){
     <div class="stat-card ${alerts.length?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
   </div>`;
 
-  html += renderAdminManagement();
-  if(ADMIN_LIST === null) setTimeout(loadAdminList, 0);
+  html += renderUserManagement();
+  if(USER_LIST === null) setTimeout(loadUserList, 0);
 
   html += renderAdminReadable(snapshot);
 
@@ -1829,7 +2009,35 @@ function compressImageFile(file, callback){
 
 function wrapView(inner){ return inner; }
 
+/* Écran affiché à la place du tableau de bord tant que personne n'est
+   connecté : les données ne sont accessibles qu'aux comptes enregistrés. */
+function renderLoginRequired(){
+  const html = `<div class="empty-state">🔒 Connecte-toi pour accéder au tableau de bord.
+    <div class="settings-note" style="margin-top:8px;">Pas encore de compte ? Demande à un administrateur de t'en créer un.</div>
+    <div style="margin-top:14px;"><button class="btn gold" id="btn-admin-unlock">Se connecter</button></div>
+  </div>`;
+  document.getElementById('app-root').innerHTML = wrapView(html);
+}
+
+/* Masque ce que le rôle connecté ne peut pas utiliser (onglet
+   Administrateur, export, import). */
+function updateRoleUI(){
+  const isAdmin = hasRole('admin');
+  const adminTab = document.querySelector('.tab-btn[data-view="admin"]');
+  if(adminTab) adminTab.style.display = isAdmin ? '' : 'none';
+  ['btn-export', 'import-label'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = isAdmin ? '' : 'none';
+  });
+  if(!isAdmin && ACTIVE_VIEW === 'admin'){
+    ACTIVE_VIEW = 'overview';
+    document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.view === ACTIVE_VIEW));
+  }
+}
+
 function render(){
+  updateRoleUI();
+  if(!hasValidSession()){ renderLoginRequired(); bindDynamicEvents(); return; }
   if(ACTIVE_VIEW==='overview') renderOverview();
   else if(ACTIVE_VIEW==='maintenance') renderMaintenance();
   else if(ACTIVE_VIEW==='effectifs') renderEffectifs();
@@ -1934,7 +2142,7 @@ function clampEntryFieldIfNeeded(el, rub, field){
 function bindDynamicEvents(){
   // Administrateur : déverrouiller / copier / rafraîchir l'aperçu de la charge utile
   const adminUnlockBtn = document.getElementById('btn-admin-unlock');
-  if(adminUnlockBtn) adminUnlockBtn.addEventListener('click', ()=> requireAdminAccess(()=> render()));
+  if(adminUnlockBtn) adminUnlockBtn.addEventListener('click', ()=> requireRole('technicien', ()=>{}));
   const adminCopyBtn = document.getElementById('btn-admin-copy');
   if(adminCopyBtn) adminCopyBtn.addEventListener('click', async ()=>{
     try{
@@ -1948,7 +2156,7 @@ function bindDynamicEvents(){
   });
   const adminRefreshBtn = document.getElementById('btn-admin-refresh');
   if(adminRefreshBtn) adminRefreshBtn.addEventListener('click', ()=> render());
-  bindAdminManagementEvents();
+  bindUserManagementEvents();
 
   // Rubrique accordion
   document.querySelectorAll('[data-toggle-rub]').forEach(el=>{
@@ -2128,12 +2336,12 @@ document.getElementById('agent-modal-cancel').addEventListener('click', closeAge
 document.getElementById('agent-modal-save').addEventListener('click', saveAgentFromModal);
 document.getElementById('agent-modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='agent-modal-bg') closeAgentModal(); });
 document.getElementById('btn-export').addEventListener('click', ()=>{
-  requireAdminAccess(exportData);
+  requireRole('admin', exportData);
 });
 document.getElementById('import-label').addEventListener('click', (e)=>{
-  if(!hasValidAdminSession()){
+  if(!hasRole('admin')){
     e.preventDefault();
-    requireAdminAccess(()=>{ document.getElementById('import-file').click(); });
+    requireRole('admin', ()=>{ document.getElementById('import-file').click(); });
   }
 });
 document.getElementById('import-file').addEventListener('change', (e)=>{
@@ -2150,6 +2358,7 @@ document.getElementById('btn-test-sync').addEventListener('click', testBackendCo
 document.getElementById('btn-reset-data').addEventListener('click', resetAllData);
 document.getElementById('btn-send-admin-code').addEventListener('click', sendAdminLoginCode);
 document.getElementById('btn-verify-admin-code').addEventListener('click', verifyAdminLoginCode);
+document.getElementById('btn-logout').addEventListener('click', logout);
 document.getElementById('admin-email-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendAdminLoginCode(); });
 document.getElementById('admin-code-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') verifyAdminLoginCode(); });
 

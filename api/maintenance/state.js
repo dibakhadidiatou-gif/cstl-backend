@@ -1,5 +1,5 @@
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret } = require('../../lib/auth');
+const { applyCors, requireUser } = require('../../lib/auth');
 
 function mergeById(stored, incoming, deletedIds) {
   const deletedSet = new Set(deletedIds || []);
@@ -72,10 +72,10 @@ function mergeEffectifs(incoming, stored, deletedAgentIds) {
 
 module.exports = async (req, res) => {
   if (applyCors(req, res)) return;
-  if (!checkAppSecret(req)) { res.status(401).json({ ok: false, error: 'Secret application invalide' }); return; }
 
   try {
     const supabase = getSupabase();
+    if (!(await requireUser(req, res, supabase, 'technicien'))) return;
 
     if (req.method === 'GET') {
       const { data, error } = await supabase.from('maintenance_state').select('maintenance, effectifs').eq('id', 'main').maybeSingle();

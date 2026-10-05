@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret, issueAdminToken, normalizeEmail } = require('../../lib/auth');
+const { applyCors, checkAppSecret, issueSessionToken, normalizeEmail } = require('../../lib/auth');
 
 // Nombre maximal de codes essayes pour un meme code emis. Au-dela, le code
 // est detruit et il faut en redemander un (empeche de tester les 900 000
@@ -74,8 +74,13 @@ module.exports = async (req, res) => {
     }
 
     await supabase.from('admin_codes').delete().eq('email', email);
-    const token = issueAdminToken(email);
-    res.status(200).json({ ok: true, token });
+
+    // Le compte a pu etre retire entre l'envoi du code et sa saisie.
+    const { data: user } = await supabase.from('users').select('email, role').eq('email', email).maybeSingle();
+    if (!user) { res.status(200).json({ ok: false, error: 'Ce compte n\'existe plus. Contacte un administrateur.' }); return; }
+
+    const token = issueSessionToken(email);
+    res.status(200).json({ ok: true, token, email: user.email, role: user.role });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err.message || err) });
   }
