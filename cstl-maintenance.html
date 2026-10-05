@@ -978,6 +978,7 @@ async function verifyAdminLoginCode(){
       ADMIN_TOKEN = data.token;
       ADMIN_TOKEN_EXPIRES = Date.now() + 23.5 * 60 * 60 * 1000; // un peu sous les 24h serveur, marge de sécurité
       ADMIN_EMAIL_LOGGED_IN = email;
+      ADMIN_LIST = null; // recharger la liste pour ce nouvel admin
       await saveAdminSession();
       renderAdminLoginState();
       const pending = PENDING_ADMIN_ACTION; PENDING_ADMIN_ACTION = null;
@@ -1246,6 +1247,127 @@ function buildAdminSnapshot(){
   return clone;
 }
 
+/* ============================================================
+   Gestion des administrateurs (onglet Administrateur) — ajouter ou
+   retirer un admin sans passer par le SQL Editor de Supabase.
+   La liste et la saisie en cours sont gardées en mémoire pour survivre
+   à l'actualisation automatique (toutes les 30 s) qui redessine la vue.
+   ============================================================ */
+let ADMIN_LIST = null;          // null = pas encore chargée
+let ADMIN_LIST_LOADING = false;
+let ADMIN_MANAGE_NOTE = '';
+let ADMIN_NEW_EMAIL_DRAFT = '';
+let ADMIN_NEW_EMAIL_FOCUSED = false;
+
+function renderAdminManagement(){
+  let html = `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Gestion des administrateurs</h3>`;
+  html += `<div class="settings-note" style="margin-bottom:12px;">L'effet est immédiat : une adresse ajoutée peut demander son code de connexion tout de suite. Saisis l'adresse en minuscules, exactement comme la personne la tapera pour se connecter.</div>`;
+  html += `<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+    <input type="text" id="admin-new-email" placeholder="nouvelle.adresse@exemple.com" value="${esc(ADMIN_NEW_EMAIL_DRAFT)}" style="flex:1; min-width:220px;">
+    <button class="btn gold" id="btn-admin-add">Ajouter l'administrateur</button>
+  </div>`;
+  if(ADMIN_MANAGE_NOTE) html += `<div class="settings-note" style="margin-bottom:12px;">${esc(ADMIN_MANAGE_NOTE)}</div>`;
+
+  if(ADMIN_LIST === null){
+    html += `<div class="settings-note">Chargement de la liste…</div>`;
+    return html;
+  }
+  const me = (ADMIN_EMAIL_LOGGED_IN || '').trim().toLowerCase();
+  html += `<div class="table-wrap"><table><thead><tr><th>Adresse</th><th>Ajouté le</th><th></th></tr></thead><tbody>`;
+  ADMIN_LIST.forEach(a=>{
+    const isMe = (a.email || '').toLowerCase() === me;
+    const added = a.added_at ? new Date(a.added_at).toLocaleDateString('fr-FR') : '—';
+    html += `<tr>
+      <td class="mono">${esc(a.email)}${isMe ? ' <em>(vous)</em>' : ''}</td>
+      <td>${esc(added)}</td>
+      <td>${isMe ? '' : `<button class="btn ghost admin-remove-btn" data-email="${esc(a.email)}">Retirer</button>`}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  html += `<div class="row-actions" style="margin-top:8px;"><button class="btn ghost" id="btn-admin-list-refresh">Rafraîchir la liste</button></div>`;
+  return html;
+}
+
+/* Applique une réponse de /api/admin/admins. Une session expirée ou une
+   adresse qui n'est plus admin ramène à l'écran de connexion. */
+function applyAdminListResponse(status, data){
+  if(status === 401 || status === 403){
+    ADMIN_TOKEN = null; ADMIN_TOKEN_EXPIRES = 0;
+    saveAdminSession();
+    ADMIN_LIST = null;
+    ADMIN_MANAGE_NOTE = '';
+    alert((data && data.error) || 'Session administrateur expirée. Reconnecte-toi.');
+    return false;
+  }
+  if(data && data.ok){
+    ADMIN_LIST = data.admins || [];
+    return true;
+  }
+  ADMIN_MANAGE_NOTE = '⚠ ' + ((data && data.error) || 'Erreur inattendue.');
+  if(ADMIN_LIST === null) ADMIN_LIST = [];
+  return false;
+}
+
+async function loadAdminList(){
+  if(ADMIN_LIST_LOADING) return;
+  ADMIN_LIST_LOADING = true;
+  try{
+    const { status, data } = await backendFetch('/api/admin/admins', { method:'GET', auth:true });
+    applyAdminListResponse(status, data);
+  }catch(e){
+    ADMIN_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    if(ADMIN_LIST === null) ADMIN_LIST = [];
+  }
+  ADMIN_LIST_LOADING = false;
+  if(ACTIVE_VIEW === 'admin') render();
+}
+
+async function adminManageAction(action, email){
+  try{
+    const { status, data } = await backendFetch('/api/admin/admins', { method:'POST', auth:true, body:{ action, email } });
+    if(applyAdminListResponse(status, data)){
+      if(action === 'add'){
+        ADMIN_NEW_EMAIL_DRAFT = '';
+        ADMIN_MANAGE_NOTE = `✓ ${email} est maintenant administrateur.`;
+      } else {
+        ADMIN_MANAGE_NOTE = `✓ ${email} n'est plus administrateur. Une session déjà ouverte reste valable jusqu'à 24 h.`;
+      }
+    }
+  }catch(e){
+    ADMIN_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+  }
+  render();
+}
+
+function bindAdminManagementEvents(){
+  const input = document.getElementById('admin-new-email');
+  if(input){
+    input.addEventListener('input', ()=>{ ADMIN_NEW_EMAIL_DRAFT = input.value; });
+    input.addEventListener('focus', ()=>{ ADMIN_NEW_EMAIL_FOCUSED = true; });
+    input.addEventListener('blur', ()=>{ ADMIN_NEW_EMAIL_FOCUSED = false; });
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') document.getElementById('btn-admin-add').click(); });
+    // L'actualisation automatique redessine la vue : on rend le focus si la personne était en train de taper.
+    if(ADMIN_NEW_EMAIL_FOCUSED){ input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  }
+  const addBtn = document.getElementById('btn-admin-add');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const email = ADMIN_NEW_EMAIL_DRAFT.trim().toLowerCase();
+    if(!email) return;
+    addBtn.disabled = true;
+    adminManageAction('add', email);
+  });
+  document.querySelectorAll('.admin-remove-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const email = btn.dataset.email;
+      if(!confirm(`Retirer ${email} des administrateurs ?\n\nSi cette personne est déjà connectée, sa session reste valable jusqu'à 24 h.`)) return;
+      btn.disabled = true;
+      adminManageAction('remove', email);
+    });
+  });
+  const refreshBtn = document.getElementById('btn-admin-list-refresh');
+  if(refreshBtn) refreshBtn.addEventListener('click', ()=>{ ADMIN_LIST = null; ADMIN_MANAGE_NOTE = ''; render(); });
+}
+
 function renderAdmin(){
   let html = `<div class="page-head"><div><h2>Administrateur</h2><div class="desc">Toutes les données actuellement enregistrées dans l'appli, en temps réel</div></div></div>`;
 
@@ -1269,6 +1391,9 @@ function renderAdmin(){
     <div class="stat-card"><div class="num">${DATA.effectifs.agents.length}</div><div class="lbl">Éléments (effectifs)</div></div>
     <div class="stat-card ${alerts.length?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
   </div>`;
+
+  html += renderAdminManagement();
+  if(ADMIN_LIST === null) setTimeout(loadAdminList, 0);
 
   html += renderAdminReadable(snapshot);
 
@@ -1823,6 +1948,7 @@ function bindDynamicEvents(){
   });
   const adminRefreshBtn = document.getElementById('btn-admin-refresh');
   if(adminRefreshBtn) adminRefreshBtn.addEventListener('click', ()=> render());
+  bindAdminManagementEvents();
 
   // Rubrique accordion
   document.querySelectorAll('[data-toggle-rub]').forEach(el=>{
