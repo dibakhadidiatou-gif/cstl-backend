@@ -1,5 +1,5 @@
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret, verifyAdminToken } = require('../../lib/auth');
+const { applyCors, checkAppSecret, verifyAdminToken, normalizeEmail } = require('../../lib/auth');
 
 // Gestion des administrateurs depuis l'application, sans passer par le SQL
 // Editor de Supabase.
@@ -11,10 +11,6 @@ const { applyCors, checkAppSecret, verifyAdminToken } = require('../../lib/auth'
 // jeton de 24h n'a pas encore expire).
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function normalizeEmail(email) {
-  return String(email || '').trim().toLowerCase();
-}
 
 async function listAdmins(supabase) {
   const { data, error } = await supabase
@@ -38,7 +34,7 @@ module.exports = async (req, res) => {
     const { data: stillAdmin } = await supabase
       .from('admin_emails')
       .select('email')
-      .eq('email', session.email)
+      .eq('email', normalizeEmail(session.email))
       .maybeSingle();
     if (!stillAdmin) { res.status(403).json({ ok: false, error: 'Cette adresse n\'est plus administrateur.' }); return; }
 
