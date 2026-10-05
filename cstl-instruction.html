@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSTL — Maintenance</title>
+<title>CSTL — Bureau Instruction</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -245,6 +245,9 @@
   .fiche-actions{display:flex; gap:8px; margin-top:10px;}
   .icon-btn{background:none; border:1px solid var(--line); border-radius:2px; padding:5px 9px; font-size:11px; cursor:pointer; color:var(--ink-soft); font-family:'IBM Plex Sans';}
   .icon-btn:hover{background:rgba(255,255,255,0.06); color:var(--ink);}
+  .icon-btn.validate-btn{border-color:var(--ok); color:var(--ok); font-weight:600;}
+  .icon-btn.validate-btn:hover{background:var(--ok-bg);}
+  .lock-badge{padding:5px 10px; font-size:11px;}
 
   /* ===== Modal ===== */
   .modal-bg{
@@ -262,8 +265,15 @@
   .modal-body{padding:20px; display:flex; flex-direction:column; gap:14px; max-height:65vh; overflow-y:auto;}
   .modal-foot{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
   .field-full{display:flex; flex-direction:column; gap:5px;}
-  .field-full label.check-row{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; font-weight:normal; text-transform:none; letter-spacing:normal;}
-  .check-row input[type="checkbox"]{width:15px; height:15px; cursor:pointer; accent-color:var(--gold);}
+  .field-full label{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
+
+  /* ===== Onglets internes du modal (Informations / Importer fiche) ===== */
+  .modal-tabs{display:flex; gap:2px; margin:-20px -20px 4px; padding:0 20px; background:var(--navy); border-bottom:1px solid var(--line);}
+  .modal-tab-btn{background:none; border:none; font-family:'Big Shoulders Display'; font-weight:600; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-soft); padding:10px 14px; cursor:pointer; border-bottom:3px solid transparent; transition:color .15s, border-color .15s;}
+  .modal-tab-btn:hover{color:var(--ink);}
+  .modal-tab-btn.active{color:var(--sky); border-bottom-color:var(--gold);}
+  .modal-tab-content{display:none;}
+  .modal-tab-content.active{display:flex; flex-direction:column; gap:14px;}
 
   /* ===== Pièces jointes (photos / documents scannés) ===== */
   .attach-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px;}
@@ -274,7 +284,16 @@
   .attach-name{color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .attach-size{color:var(--ink-soft); font-size:10px; margin-top:2px;}
   .attach-card .del-btn{position:absolute; top:6px; right:6px; background:var(--navy-3);}
-  .field-full label{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
+
+  /* ===== Grille de critères — Évaluation adaptation ===== */
+  .adapt-grid-wrap{border:1px solid var(--line); border-radius:2px; padding:12px 14px; background:var(--navy);}
+  .adapt-grid{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .adapt-grid th{text-align:left; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.03em; color:var(--ink-soft); padding:5px 6px; border-bottom:2px solid var(--sky);}
+  .adapt-grid td{padding:6px 6px; border-bottom:1px solid rgba(255,255,255,0.07); vertical-align:middle;}
+  .adapt-grid td:first-child{color:var(--ink);}
+  .adapt-grid select{width:100%; min-width:150px; padding:5px 7px; font-size:12px;}
+  .adapt-score-line{display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); font-family:'Big Shoulders Display'; font-weight:700; font-size:14px; color:var(--sky); text-transform:uppercase; letter-spacing:0.02em;}
+  #adapt-score-value{font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:12.5px; letter-spacing:0; text-transform:none; color:var(--gold);}
 
   .loading-note{color:var(--ink-soft); font-size:13px; padding:40px; text-align:center;}
   .empty-state{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13px; border:1px dashed var(--line); border-radius:4px;}
@@ -284,6 +303,9 @@
   .settings-steps{font-size:12.5px; color:var(--ink); line-height:1.85; padding-left:18px; margin:0;}
   .settings-steps li{margin-bottom:4px;}
   .settings-note{font-size:12px; color:var(--ink-soft); background:var(--navy); border:1px solid var(--line); border-radius:2px; padding:10px 12px;}
+  .field-check{font-size:11.5px; font-family:'IBM Plex Mono', monospace; margin-top:2px; min-height:14px;}
+  .field-check.ok{color:var(--ok);}
+  .field-check.warn{color:var(--alert);}
   .inline-row{display:flex; gap:8px; align-items:center;}
   .inline-row input{flex:1;}
 
@@ -301,7 +323,7 @@
     <div class="brand">
       <div class="crest"></div>
       <div class="brand-text">
-        <h1>CSTL — Maintenance</h1>
+        <h1>CSTL — Bureau Instruction</h1>
         <div class="sub">Base Ecole de Thiès · Commandement Soutien Technique et Logistique</div>
       </div>
     </div>
@@ -316,8 +338,7 @@
   </div>
   <div class="tabs">
     <button class="tab-btn active" data-view="overview">Vue d'ensemble</button>
-    <button class="tab-btn" data-view="maintenance">Maintenance</button>
-    <button class="tab-btn" data-view="effectifs">Effectifs</button>
+    <button class="tab-btn" data-view="instruction">Bureau Instruction</button>
     <button class="tab-btn" data-view="admin">Administrateur</button>
   </div>
   <div class="stripe-bar"></div>
@@ -325,6 +346,20 @@
 
 <div class="wrap" id="app-root">
   <div class="loading-note">Chargement du tableau de bord…</div>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Fiche</h3>
+      <button class="modal-close" id="modal-close">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="modal-cancel">Annuler</button>
+      <button class="btn gold" id="modal-save">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg" id="settings-modal-bg">
@@ -335,7 +370,7 @@
     </div>
     <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
 
-      <div class="settings-note">Les données de Maintenance sont désormais partagées entre tous les appareils via un backend central (Vercel + Supabase) — plus besoin d'exporter/importer pour transférer les données d'un poste à l'autre.</div>
+      <div class="settings-note">Les fiches sont désormais partagées entre tous les appareils via un backend central (Vercel + Supabase) — plus besoin d'exporter/importer pour transférer les données d'un poste à l'autre.</div>
 
       <div class="field-full">
         <label>URL du backend</label>
@@ -351,7 +386,7 @@
       </div>
 
       <div style="border-top:1px dashed var(--line); padding-top:14px; margin-top:4px;">
-        <div class="settings-note" style="margin-bottom:12px;">Connexion administrateur — nécessaire pour réinitialiser, exporter ou importer.</div>
+        <div class="settings-note" style="margin-bottom:12px;">Connexion administrateur — nécessaire pour valider une fiche, réinitialiser, exporter ou importer.</div>
 
         <div id="admin-login-area">
           <div class="field-full">
@@ -377,8 +412,8 @@
           <div class="settings-note">✓ Connecté en tant qu'administrateur (<span id="admin-logged-in-email" class="mono"></span>).</div>
           <div class="field-full">
             <label>Zone sensible</label>
-            <div class="settings-note">Efface définitivement <b>toutes les rubriques, tous les effectifs et toute la situation journalière</b> pour tout le monde. Action irréversible.</div>
-            <button class="btn ghost" id="btn-reset-data" style="align-self:flex-start; border-color:var(--alert); color:var(--alert); margin-top:6px;">Réinitialiser toutes les données</button>
+            <div class="settings-note">Efface définitivement <b>toutes les fiches enregistrées</b> pour tout le monde (y compris déjà validées) et remet les compteurs de référence à zéro. Action irréversible.</div>
+            <button class="btn ghost" id="btn-reset-data" style="align-self:flex-start; border-color:var(--alert); color:var(--alert); margin-top:6px;">Réinitialiser toutes les fiches</button>
           </div>
         </div>
       </div>
@@ -390,26 +425,12 @@
   </div>
 </div>
 
-<div class="modal-bg" id="agent-modal-bg">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-head">
-      <h3 id="agent-modal-title">Agent</h3>
-      <button class="modal-close" id="agent-modal-close">&times;</button>
-    </div>
-    <div class="modal-body" id="agent-modal-body"></div>
-    <div class="modal-foot">
-      <button class="btn ghost" id="agent-modal-cancel">Annuler</button>
-      <button class="btn gold" id="agent-modal-save">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ============================================================
-   CSTL — Logiciel Maintenance
+   CSTL — Logiciel Bureau Instruction
    ============================================================ */
 
-const STORAGE_KEY = 'cstl-maintenance-data-v1';
+const STORAGE_KEY = 'cstl-instruction-data-v1';
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
 function uid(){ return Math.random().toString(36).slice(2,9); }
@@ -433,207 +454,77 @@ function isValidISODate(str){
   return d.toISOString().slice(0,10) === str;
 }
 
-/* ---------- Maintenance rubrique definitions ---------- */
-const RUBRIQUES = [
-  {
-    key:'crm', label:'Vérification CRM',
-    responsibilities:[
-      "À la fin de chaque vol, vérifier sommairement le CRM concerné",
-      "Signaler les erreurs au pilote avant le prochain vol de l'aéronef concerné",
-      "À la fin de la journée, vérifier tous les CRM en détail",
-      "Remplir les rubriques dédiées à la maintenance",
-      "Vérifier qu'il n'y ait aucune erreur",
-      "Signaler les erreurs de calcul au pilote afin qu'il les rectifie",
-      "Détacher la feuille du vol concerné et la remettre au BT avant la descente ou le lendemain à la première heure",
-      "Rendre compte de tout problème rencontré",
-      "Vérifier au niveau du SRT le stock de CRM vides restant et rendre compte lorsque celui-ci atteint 10"
-    ],
-    extraFields:[{key:'stock_crm', label:'Stock CRM vides restant (SRT)', type:'number'}],
-    entryCols:[
-      {key:'date', label:'Date', type:'date'},
-      {key:'avion', label:'Aéronef', type:'text'},
-      {key:'erreurs', label:'Erreurs relevées', type:'select', options:['Aucune','Oui — signalée']},
-      {key:'remise_bt', label:'Feuille remise au BT', type:'select', options:['Oui','Non']},
-      {key:'remarque', label:'Remarque', type:'text'}
-    ]
-  },
-  {
-    key:'materiel', label:'Suivi du matériel de servitude',
-    responsibilities:[
-      "Établir un tableau de suivi du matériel disponible (casques, vêtements de pluie, cales, barres de tractage, etc.)",
-      "Tenir à jour le tableau",
-      "Envoyer le tableau au chef de maintenance tous les 15 jours",
-      "Rendre compte de tout manquement ou détérioration d'un matériel"
-    ],
-    extraFields:[{key:'dernier_envoi', label:'Dernier envoi au chef de maintenance', type:'date'}],
-    entryCols:[
-      {key:'item', label:'Matériel', type:'text'},
-      {key:'quantite', label:'Quantité', type:'number'},
-      {key:'etat', label:'État', type:'select', options:['Bon','À surveiller','Détérioré']},
-      {key:'remarque', label:'Remarque', type:'text'}
-    ]
-  },
-  {
-    key:'permissions', label:'Suivi des permissions',
-    responsibilities:[
-      "Établir un tableau de suivi des permissions (date de début et de fin, nombre de jours restants à prendre)",
-      "Tenir à jour le tableau",
-      "Envoyer le tableau au chef de maintenance à chaque changement",
-      "Rendre compte de toute irrégularité"
-    ],
-    extraFields:[],
-    entryCols:[
-      {key:'nom', label:'Nom', type:'text'},
-      {key:'debut', label:'Début', type:'date'},
-      {key:'fin', label:'Fin', type:'date'},
-      {key:'jours_restants_annee', label:'Jours restants à prendre', type:'number', min:0, max:45},
-      {key:'jours_restants_45', label:'Jours restants (congé 45 jours)', type:'number', min:0, max:45}
-    ]
-  },
-  {
-    key:'couleurs_presence', label:'Présence Couleurs',
-    responsibilities:[
-      "Tenir à jour la liste des éléments présents à la levée des couleurs",
-      "Signaler toute absence non justifiée au chef de section"
-    ],
-    extraFields:[],
-    entryCols:[
-      {key:'nom', label:'Nom', type:'text'},
-      {key:'prenoms', label:'Prénoms', type:'text'},
-      {key:'grade', label:'Grade', type:'text'},
-      {key:'presence', label:'Présence', type:'select', options:['Présent','Absent']}
-    ]
-  },
-  {
-    key:'ppv_groupe', label:'Groupe PPV (Préparation Pour Vols)',
-    responsibilities:[
-      "Tenir à jour la liste des éléments affectés à la Préparation Pour Vols",
-      "Mettre à jour la liste à chaque changement d'affectation"
-    ],
-    extraFields:[],
-    entryCols:[
-      {key:'nom', label:'Nom', type:'text'},
-      {key:'prenoms', label:'Prénoms', type:'text'},
-      {key:'grade', label:'Grade', type:'text'},
-      {key:'presence', label:'Présence', type:'select', options:['Présent','Absent']}
-    ]
-  },
-  {
-    key:'batteries', label:'Suivi des batteries',
-    responsibilities:[
-      "Établir un tableau de suivi des batteries",
-      "Suivre et planifier les dates des prochaines recharges",
-      "Vérifier le bon fonctionnement du banc de charge chaque semaine",
-      "Rendre compte de toute anomalie",
-      "Rendre compte trois mois avant la date de la prochaine calibration du banc de charge"
-    ],
-    extraFields:[{key:'derniere_verif_banc', label:'Dernière vérification banc de charge', type:'date'},
-                 {key:'prochaine_calibration_banc', label:'Prochaine calibration du banc de charge', type:'date'}],
-    entryCols:[
-      {key:'batterie', label:'Batterie (n°/aéronef)', type:'text'},
-      {key:'prochaine_recharge', label:'Prochaine recharge', type:'date'},
-      {key:'etat', label:'État', type:'select', options:['Bon','À surveiller','HS']}
-    ]
-  },
-  {
-    key:'proprete_aero', label:'Propreté aéronefs',
-    responsibilities:[
-      "Garantir la propreté intérieure et extérieure de l'aéronef",
-      "Contrôler l'état de propreté de l'aéronef avant et après chaque vol",
-      "Inspecter l'absence de FOD avant et après chaque vol",
-      "Détecter et signaler toute anomalie (fuite, corrosion, résidu)",
-      "Rendre compte de tout manquement au chef de maintenance"
-    ],
-    extraFields:[],
-    entryCols:[
-      {key:'date', label:'Date', type:'date'},
-      {key:'avion', label:'Aéronef', type:'text'},
-      {key:'avant_vol', label:'Avant vol', type:'select', options:['OK','Anomalie']},
-      {key:'apres_vol', label:'Après vol', type:'select', options:['OK','Anomalie']},
-      {key:'fod', label:'FOD détecté', type:'select', options:['Non','Oui']},
-      {key:'remarque', label:'Remarque', type:'text'}
-    ]
-  },
-  {
-    key:'points_fixes', label:'Points fixes hélicos',
-    responsibilities:[
-      "Suivre les dates de point fixe (maximum 21 jours entre 2 vols)",
-      "Envoyer chaque semaine l'état des points fixes à venir au chef de maintenance",
-      "Planifier avec les pilotes les points fixes",
-      "Rendre compte de tout retard de point fixe"
-    ],
-    extraFields:[{key:'dernier_envoi_hebdo', label:'Dernier envoi hebdomadaire au chef de maintenance', type:'date'}],
-    entryCols:[
-      {key:'helico', label:'Hélicoptère', type:'text'},
-      {key:'dernier_point_fixe', label:'Dernier point fixe / vol', type:'date'}
-    ]
-  },
-  {
-    key:'proprete_env', label:'Propreté environnement',
-    responsibilities:[
-      "Veiller en permanence à l'absence de tout corps étranger (FOD) sur l'aire de maintenance, le hangar et leurs abords",
-      "Assurer la propreté et l'ordre du hangar, du bureau piste et du bar, et le respect des règles d'hygiène",
-      "Vérifier l'état, la disponibilité et le bon fonctionnement du matériel de nettoyage",
-      "Effectuer des inspections régulières de propreté et rendre compte de tout écart constaté"
-    ],
-    extraFields:[],
-    entryCols:[
-      {key:'date', label:'Date', type:'date'},
-      {key:'zone', label:'Zone (hangar/piste/bureau/bar)', type:'text'},
-      {key:'etat', label:'État', type:'select', options:['Conforme','Écart constaté']},
-      {key:'remarque', label:'Remarque', type:'text'}
-    ]
-  }
-];
-
-/* Ces rubriques sont définies comme les autres (mêmes entrées, mêmes colonnes,
-   même synchronisation vers le Sheet) mais s'affichent uniquement dans
-   "Gestion des effectifs", jamais dans la grille de la page Maintenance. */
-const EFFECTIFS_ONLY_RUBRIQUES = ['permissions', 'couleurs_presence', 'ppv_groupe'];
-
-/* ---------- Gestion des effectifs (personnel) ---------- */
-const EFFECTIF_STATUTS = ['Présent','PCD','PRLD','PTC','Mission','Stage','ASM','Indisponible','En service'];
-const EFFECTIF_STATUT_LABELS = {
-  'Présent': 'Présent',
-  'PCD': 'PCD — Permission de Courte Durée',
-  'PRLD': 'PRLD — Permission Réglementaire de Longue Durée',
-  'PTC': 'PTC — Permission Temporaire de Convalescence',
-  'Mission': 'Mission',
-  'Stage': 'Stage',
-  'ASM': 'ASM — Absence Sans Motif',
-  'Indisponible': 'Indisponible (autre motif)',
-  'En service': 'En service'
+/* ---------- Bureau Instruction — fiche types ---------- */
+const FICHE_TYPES = {
+  PLA: { ref:'BI-PLA', label:"Planification des activités d'instruction", fields:[
+    {key:'periode', label:'Période de planification', type:'text', ph:'Trimestre / Mois / Année'},
+    {key:'cellule', label:'Cellule / Section', type:'text'},
+    {key:'domaine', label:'Domaine concerné', type:'text', ph:'Technique / Réglementaire / SGS…'},
+    {key:'public_vise', label:'Public visé', type:'text'},
+  ]},
+  SUI: { ref:'BI-SUI', label:"Suivi d'exécution des activités", fields:[
+    {key:'fiche_liee', label:'N° fiche planification liée', type:'text'},
+    {key:'taux_realisation', label:'Taux de réalisation global (%)', type:'number'},
+    {key:'taux_assiduite', label:"Taux d'assiduité (%)", type:'number'},
+    {key:'taux_annulation', label:"Taux d'annulation / report (%)", type:'number'},
+    {key:'ecarts', label:'Écarts constatés', type:'textarea'},
+  ]},
+  EVA: { ref:'BI-EVA', label:"Évaluation de l'évolution des activités", fields:[
+    {key:'periode_evaluee', label:'Période évaluée', type:'text'},
+    {key:'taux_n1', label:'Taux réalisation période N-1 (%)', type:'number'},
+    {key:'taux_n', label:'Taux réalisation période N (%)', type:'number'},
+    {key:'tendance', label:'Tendance', type:'select', options:['Hausse','Stable','Baisse']},
+    {key:'plan_action', label:"Plan d'action / recommandations", type:'textarea'},
+  ]},
+  ADA: { ref:'BI-ADA', label:"Évaluation du niveau d'adaptation du personnel", fields:[
+    {key:'nom_agent', label:"Nom et prénom de l'agent", type:'text'},
+    {key:'matricule', label:'Matricule', type:'text'},
+    {key:'fonction', label:'Fonction / Poste', type:'text'},
+    {key:'decision', label:'Décision', type:'select', options:['Confirmation sans réserve','Confirmation avec accompagnement renforcé','Prolongation de la période d\'adaptation','Formation complémentaire à programmer']},
+  ]},
+  CTD: { ref:'BI-CTD', label:'Activités de cohésion, tradition et divers', fields:[
+    {key:'periode', label:'Période de planification', type:'text'},
+    {key:'cellule', label:'Cellule / Section', type:'text'},
+    {key:'domaine', label:'Domaine concerné', type:'text'},
+    {key:'public_vise', label:'Public visé', type:'text'},
+  ]},
+  PRES: { ref:'BI-PRES', label:'Fiche de présence', fields:[
+    {key:'activite_liee', label:'Activité concernée', type:'text'},
+    {key:'effectif_attendu', label:'Effectif attendu', type:'number'},
+    {key:'effectif_present', label:'Effectif présent', type:'number'},
+  ]},
 };
-const AGENT_FIELDS = [
-  {key:'grade', label:'Grade', type:'text'},
-  {key:'gradeType', label:'Catégorie', type:'text'},
-  {key:'prenoms', label:'Prénoms', type:'text'},
-  {key:'nom', label:'Nom', type:'text'},
-  {key:'idNum', label:'ID / Matricule', type:'text'},
-  {key:'adresseActuelle', label:'Adresse actuelle', type:'text'},
-  {key:'domicile', label:'Domicile (origine)', type:'text'},
-  {key:'transport', label:'Moyen de transport utilisé', type:'text'},
-  {key:'diplome', label:'Diplôme', type:'text'},
-  {key:'qualification', label:'Qualification', type:'text'},
-  {key:'certification', label:'Certification', type:'text'},
+const STATUTS = ['Planifiée','En cours','Réalisée','Clôturée'];
+
+/* ---------- Grille de critères — Évaluation du niveau d'adaptation (ADA) ----------
+   Chaque critère est noté sur 4 niveaux. Le score global est calculé
+   automatiquement (moyenne des critères renseignés), il n'est plus saisi
+   librement — cela garantit une notation homogène d'une fiche à l'autre. */
+const CRITERES_ADAPTATION = [
+  { key:'crit_discipline',  label:'Discipline et respect des règles' },
+  { key:'crit_assiduite',   label:'Assiduité et ponctualité' },
+  { key:'crit_technique',   label:'Maîtrise technique du poste' },
+  { key:'crit_integration', label:"Intégration et esprit d'équipe" },
+  { key:'crit_autonomie',   label:'Initiative et autonomie' },
+  { key:'crit_hierarchie',  label:'Respect de la voie hiérarchique' },
+  { key:'crit_tenue',       label:'Tenue et rigueur professionnelle' },
+  { key:'crit_progression', label:'Capacité de progression / apprentissage' },
+];
+const NIVEAUX_ADAPTATION = [
+  { val:'1', label:'1 — Insuffisant' },
+  { val:'2', label:'2 — À contrôler' },
+  { val:'3', label:'3 — Satisfaisant' },
+  { val:'4', label:'4 — Maîtrisé' },
 ];
 
 /* ---------- Default data ---------- */
 function defaultData(){
-  const maintenance = {};
-  RUBRIQUES.forEach(r=>{
-    maintenance[r.key] = { responsable:'', suppleants:'', extra:{}, entries:[] };
-  });
-  return { maintenance, effectifs:{agents:[], situations:[]}, settings:{backendUrl:'', appSecret:''} };
+  return { fiches: [], fichesSeq:{PLA:0,SUI:0,EVA:0,ADA:0,CTD:0,PRES:0}, settings:{backendUrl:'', appSecret:''} };
 }
 
 let DATA = null;
 let ACTIVE_VIEW = 'overview';
-let OPEN_RUB = null;
-let EFFECTIFS_SUBVIEW = 'agents'; // 'agents' | 'situation' | 'couleurs' | 'ppv' | 'permissions'
-let EFFECTIFS_DATE = null; // set on first render to today
-let editingAgentId = null;
-let AGENT_MODAL_PIECES = []; // pièces jointes (photos/scans) en cours d'édition dans le modal élément
+let FICHE_FILTER = 'ALL';
 let ADMIN_TOKEN = null;
 let ADMIN_TOKEN_EXPIRES = 0;
 let ADMIN_EMAIL_LOGGED_IN = '';
@@ -642,9 +533,8 @@ let PENDING_ADMIN_ACTION = null;
 /* ---------- Storage abstraction ----------
    Seules les infos de CONNEXION (URL du backend, secret d'application) sont
    gardées localement — elles sont nécessaires avant même de pouvoir
-   contacter le backend. Les vraies données (rubriques, effectifs) ne vivent
-   plus ici : elles vivent sur le backend partagé, communes à tous les
-   appareils. */
+   contacter le backend. Les vraies données (les fiches) ne vivent plus ici :
+   elles vivent sur le backend partagé, communes à tous les appareils. */
 const HAS_CLAUDE_STORAGE = (typeof window !== 'undefined' && !!window.storage);
 
 async function storageRead(key){
@@ -721,8 +611,7 @@ async function backendFetch(path, opts = {}){
   return { status: res.status, ok: res.ok, data };
 }
 
-let LAST_SYNCED_MAINTENANCE = {};
-let LAST_SYNCED_AGENTS = [];
+let LAST_SYNCED_FICHES = [];
 
 async function loadData(){
   DATA = defaultData();
@@ -738,15 +627,11 @@ async function loadData(){
 
   setSaveIndicator('saving', 'Chargement…');
   try{
-    const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
+    const { ok, data } = await backendFetch('/api/instruction/state', { method:'GET' });
     if(ok && data && data.ok){
-      RUBRIQUES.forEach(r=>{ if(!data.maintenance[r.key]) data.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
-      DATA.maintenance = data.maintenance || DATA.maintenance;
-      DATA.effectifs = data.effectifs || DATA.effectifs;
-      if(!DATA.effectifs.agents) DATA.effectifs.agents = [];
-      if(!DATA.effectifs.situations) DATA.effectifs.situations = [];
-      normalizeEntryBounds();
-      snapshotSyncedState();
+      DATA.fiches = data.fiches || [];
+      LAST_SYNCED_FICHES = DATA.fiches.map(f=>Object.assign({}, f));
+      normalizeFichesLock();
       setSaveIndicator('saved', 'Synchronisé');
     } else {
       setSaveIndicator('error', (data && data.error) || 'Échec du chargement');
@@ -756,37 +641,14 @@ async function loadData(){
   }
 }
 
-/* Garde une copie de ce qu'on sait être sur le serveur, pour pouvoir
-   detecter plus tard une suppression volontaire (un id present ici mais
-   disparu de DATA au moment d'enregistrer). */
-function snapshotSyncedState(){
-  LAST_SYNCED_MAINTENANCE = {};
-  RUBRIQUES.forEach(r=>{
-    const d = DATA.maintenance[r.key];
-    LAST_SYNCED_MAINTENANCE[r.key] = (d && d.entries) ? d.entries.map(e=>Object.assign({}, e)) : [];
-  });
-  LAST_SYNCED_AGENTS = (DATA.effectifs.agents || []).map(a=>Object.assign({}, a));
-}
-
-/* Corrige automatiquement toute valeur déjà enregistrée avant la mise en place
-   du blocage min/max (ex. un ancien 356 saisi avant la limite à 45) — sans ça,
-   une vieille valeur resterait bloquée hors bornes indéfiniment même après la
-   correction du code, et continuerait à déclencher l'alerte « incohérent ». */
-function normalizeEntryBounds(){
-  RUBRIQUES.forEach(r=>{
-    const d = DATA.maintenance[r.key];
-    if(!d || !d.entries) return;
-    d.entries.forEach(e=>{
-      r.entryCols.forEach(c=>{
-        if(c.type !== 'number' || (c.min === undefined && c.max === undefined)) return;
-        if(e[c.key] === undefined || e[c.key] === '') return;
-        let num = Number(e[c.key]);
-        if(isNaN(num)) return;
-        if(c.min !== undefined && num < c.min) num = c.min;
-        if(c.max !== undefined && num > c.max) num = c.max;
-        e[c.key] = num;
-      });
-    });
+/* Une fiche ancienne (sauvegarde antérieure à l'ajout de la validation ou des
+   pièces jointes) n'a pas encore ces champs : valeurs par défaut sûres. */
+function normalizeFichesLock(){
+  if(!DATA || !DATA.fiches) return;
+  DATA.fiches.forEach(f=>{
+    if(typeof f.valide === 'undefined') f.valide = false;
+    if(typeof f.valideLe === 'undefined') f.valideLe = null;
+    if(!Array.isArray(f.pieces)) f.pieces = [];
   });
 }
 
@@ -797,30 +659,18 @@ function saveData(){
   if(!DATA.settings.backendUrl){ setSaveIndicator('error', 'Backend non configuré'); return; }
   saveTimer = setTimeout(async ()=>{
     try{
-      // Une ligne (entree de rubrique, element d'effectif) presente dans le
-      // dernier etat connu du serveur mais absente localement a ete
-      // supprimee ICI, volontairement — on le dit explicitement au serveur
-      // au lieu de le laisser deviner (sinon, tout ajout fait entre-temps
-      // par quelqu'un d'autre et qu'on ne connait pas encore serait effacé).
-      const deletedEntryIds = {};
-      RUBRIQUES.forEach(r=>{
-        const before = LAST_SYNCED_MAINTENANCE[r.key] || [];
-        const after = (DATA.maintenance[r.key] && DATA.maintenance[r.key].entries) || [];
-        const del = before.filter(e=> !after.some(x=>x.id===e.id)).map(e=>e.id);
-        if(del.length) deletedEntryIds[r.key] = del;
-      });
-      const deletedAgentIds = LAST_SYNCED_AGENTS.filter(a=> !DATA.effectifs.agents.some(x=>x.id===a.id)).map(a=>a.id);
-
-      const { ok, data } = await backendFetch('/api/maintenance/state', {
-        method:'POST',
-        body:{ maintenance: DATA.maintenance, effectifs: DATA.effectifs, deletedEntryIds, deletedAgentIds }
-      });
+      // Une fiche presente dans le dernier etat recu du serveur mais absente
+      // de notre tableau local a ete supprimee ICI, volontairement — on le
+      // dit explicitement au serveur au lieu de le laisser deviner (sinon,
+      // toute fiche ajoutee par quelqu'un d'autre entre-temps et qu'on ne
+      // connait pas encore serait effacee par erreur).
+      const deletedIds = LAST_SYNCED_FICHES.filter(f=> !DATA.fiches.some(x=>x.id===f.id)).map(f=>f.id);
+      const { ok, data } = await backendFetch('/api/instruction/state', { method:'POST', body:{ fiches: DATA.fiches, deletedIds } });
       if(ok && data && data.ok){
         // Le serveur renvoie l'etat final consolide (fusionne avec les ajouts
         // eventuels d'autres personnes) : on l'adopte comme nouvelle reference.
-        DATA.maintenance = data.maintenance || DATA.maintenance;
-        DATA.effectifs = data.effectifs || DATA.effectifs;
-        snapshotSyncedState();
+        DATA.fiches = data.fiches || DATA.fiches;
+        LAST_SYNCED_FICHES = DATA.fiches.map(f=>Object.assign({}, f));
         setSaveIndicator('saved', 'Synchronisé');
       } else {
         setSaveIndicator('error', (data && data.error) || "Échec de l'enregistrement");
@@ -843,15 +693,11 @@ function startAutoRefresh(){
     if(!DATA || !DATA.settings.backendUrl) return;
     if(document.querySelector('.modal-bg.open')) return;
     try{
-      const { ok, data } = await backendFetch('/api/maintenance/state', { method:'GET' });
+      const { ok, data } = await backendFetch('/api/instruction/state', { method:'GET' });
       if(ok && data && data.ok){
-        RUBRIQUES.forEach(r=>{ if(!data.maintenance[r.key]) data.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
-        DATA.maintenance = data.maintenance || DATA.maintenance;
-        DATA.effectifs = data.effectifs || DATA.effectifs;
-        if(!DATA.effectifs.agents) DATA.effectifs.agents = [];
-        if(!DATA.effectifs.situations) DATA.effectifs.situations = [];
-        normalizeEntryBounds();
-        snapshotSyncedState();
+        DATA.fiches = data.fiches || [];
+        LAST_SYNCED_FICHES = DATA.fiches.map(f=>Object.assign({}, f));
+        normalizeFichesLock();
         render();
       }
     }catch(e){ /* on retentera au prochain intervalle */ }
@@ -868,15 +714,15 @@ function setSaveIndicator(state, text){
 
 /* ---------- Manual export / import (JSON backup) ---------- */
 function exportData(){
-  // On n'exporte que les données métier (jamais l'URL du backend ni le
-  // secret d'application — ces informations de connexion ne doivent pas se
+  // On n'exporte que les fiches (jamais l'URL du backend ni le secret
+  // d'application — ces informations de connexion ne doivent pas se
   // retrouver dans un fichier de sauvegarde qui pourrait circuler).
-  const blob = new Blob([JSON.stringify({ maintenance: DATA.maintenance, effectifs: DATA.effectifs }, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ fiches: DATA.fiches }, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const stamp = todayISO();
   a.href = url;
-  a.download = `cstl-maintenance-sauvegarde-${stamp}.json`;
+  a.download = `cstl-instruction-sauvegarde-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -888,19 +734,17 @@ async function importDataFromFile(file){
   if(!text){ alert('Impossible de lire ce fichier.'); return; }
   let parsed;
   try{ parsed = JSON.parse(text); }catch(e){ alert("Ce fichier n'est pas un JSON valide."); return; }
-  if(!parsed || typeof parsed !== 'object' || !parsed.maintenance || !parsed.effectifs){
+  if(!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.fiches)){
     alert("Ce fichier n'est pas une sauvegarde valide de ce tableau de bord.");
     return;
   }
-  RUBRIQUES.forEach(r=>{ if(!parsed.maintenance[r.key]) parsed.maintenance[r.key] = {responsable:'',suppleants:'',extra:{},entries:[]}; });
-  if(!parsed.effectifs.agents) parsed.effectifs.agents = [];
-  if(!parsed.effectifs.situations) parsed.effectifs.situations = [];
   try{
-    const { ok, data } = await backendFetch('/api/maintenance/state', { method:'POST', body:{ maintenance: parsed.maintenance, effectifs: parsed.effectifs } });
+    // Envoi direct (pas de délai) : le backend applique immédiatement le
+    // verrou des fiches déjà validées et renvoie l'état final consolidé.
+    const { ok, data } = await backendFetch('/api/instruction/state', { method:'POST', body:{ fiches: parsed.fiches } });
     if(ok && data && data.ok){
-      DATA.maintenance = parsed.maintenance;
-      DATA.effectifs = parsed.effectifs;
-      normalizeEntryBounds();
+      DATA.fiches = data.fiches || [];
+      normalizeFichesLock();
       render();
       alert('Sauvegarde importée avec succès.');
     } else {
@@ -991,7 +835,7 @@ async function verifyAdminLoginCode(){
   }
 }
 
-/* Utilisé par toute action réservée à l'administrateur (réinitialiser,
+/* Utilisé par toute action réservée à l'administrateur (valider, réinitialiser,
    exporter, importer). Si une session valide existe déjà, exécute directement
    la fonction fournie ; sinon, ouvre les réglages pour se connecter, puis
    exécute automatiquement l'action une fois la connexion réussie. */
@@ -1007,22 +851,22 @@ function requireAdminAccess(afterLoginFn){
   openSettingsModal();
 }
 
-/* Réinitialisation complète, pour tout le monde (le backend est la source de
-   vérité partagée). Action irréversible, réservée à l'administrateur connecté. */
+/* Réinitialisation complète des fiches, pour tout le monde (le backend est
+   la source de vérité partagée). Action irréversible, réservée à
+   l'administrateur connecté. */
 function resetAllData(){
   requireAdminAccess(async ()=>{
-    const ok = window.confirm("Cette action supprime définitivement TOUTES les rubriques, tous les effectifs et toute la situation journalière, pour tout le monde.\n\nContinuer ?");
+    const ok = window.confirm("Cette action supprime définitivement TOUTES les fiches enregistrées pour tout le monde (y compris les fiches déjà validées) et remet les compteurs de référence à zéro.\n\nContinuer ?");
     if(!ok) return;
     const typed = window.prompt('Pour confirmer, tape RESET (en majuscules) puis valide :');
     if(typed !== 'RESET'){ alert('Réinitialisation annulée.'); return; }
     try{
-      const { ok: httpOk, data } = await backendFetch('/api/maintenance/reset', { method:'POST', auth:true });
+      const { ok: httpOk, data } = await backendFetch('/api/instruction/reset', { method:'POST', auth:true });
       if(httpOk && data && data.ok){
-        DATA.maintenance = defaultData().maintenance;
-        DATA.effectifs = { agents: [], situations: [] };
+        DATA.fiches = [];
         closeSettingsModal();
         render();
-        alert('Toutes les données ont été supprimées. Le tableau de bord repart de zéro.');
+        alert('Toutes les fiches ont été supprimées. Le tableau de bord repart de zéro.');
       } else {
         alert((data && data.error) || 'Échec de la réinitialisation.');
       }
@@ -1039,7 +883,9 @@ async function saveConnectionFromSettings(){
   DATA.settings.appSecret = secret;
   await saveConnectionSettings();
   alert('Connexion enregistrée.');
-  loadData().then(()=>{ render(); });
+  // Si aucune fiche n'a encore été chargée (première configuration), on
+  // recharge maintenant que l'URL est connue.
+  if(!DATA.fiches.length) loadData().then(()=>{ render(); });
 }
 
 async function testBackendConnection(){
@@ -1050,9 +896,9 @@ async function testBackendConnection(){
   DATA.settings.backendUrl = url;
   DATA.settings.appSecret = secret;
   try{
-    const { ok, data, status } = await backendFetch('/api/maintenance/state', { method:'GET' });
+    const { ok, data, status } = await backendFetch('/api/instruction/state', { method:'GET' });
     if(ok && data && data.ok){
-      alert(`Connexion réussie ! ${data.agents ? data.agents.length : (data.effectifs ? data.effectifs.agents.length : 0)} élément(s) actuellement sur le backend.`);
+      alert(`Connexion réussie ! ${data.fiches ? data.fiches.length : 0} fiche(s) actuellement sur le backend.`);
     } else {
       alert(`Échec (code ${status}). ${data && data.error ? data.error : "Vérifie l'URL et le secret d'application."}`);
     }
@@ -1063,116 +909,19 @@ async function testBackendConnection(){
   }
 }
 
-
 /* ============================================================
    Alerts engine
    ============================================================ */
-/* Une rubrique jamais touchée (aucun responsable désigné, aucune entrée) ne
-   doit pas être signalée en vigilance juste parce qu'une date de suivi est
-   vide — ce n'est pas un retard, personne n'a simplement encore commencé à
-   l'utiliser. On ne déclenche l'alerte "date non renseignée" que si la
-   rubrique montre un signe d'utilisation réelle. */
-function rubriqueEnCours(d){
-  return !!(d.responsable && d.responsable.trim()) || !!(d.entries && d.entries.length > 0);
-}
-
 function computeAlerts(){
   const alerts = []; // {sev:'high'|'mid', text, src}
   const push = (sev, text, src) => alerts.push({sev, text, src});
 
-  RUBRIQUES.forEach(r=>{
-    const d = DATA.maintenance[r.key];
-    if(!d) return;
-
-    if(r.key === 'crm'){
-      const stock = Number(d.extra.stock_crm || 0);
-      if(stock >= 10) push('high', `Stock de CRM vides au SRT : ${stock} — seuil de 10 atteint, à signaler.`, r.label);
-    }
-    if(r.key === 'materiel'){
-      const last = parseDate(d.extra.dernier_envoi);
-      if(!last){ if(rubriqueEnCours(d)) push('mid', `Aucune date de dernier envoi renseignée au chef de maintenance.`, r.label); }
-      else { const days = daysBetween(last, TODAY); if(days > 15) push('high', `Tableau matériel non envoyé depuis ${days} jours (limite 15 jours).`, r.label); }
-    }
-    if(r.key === 'permissions'){
-      (d.entries||[]).forEach(e=>{
-        const fin = parseDate(e.fin);
-        if(fin){
-          const restants = daysBetween(TODAY, fin); // jours restants avant la fin de permission
-          if(restants < 0) push('mid', `Permission de ${e.nom || '—'} : date de fin dépassée (${fmtDate(e.fin)}).`, r.label);
-          else if(restants <= 2) push('high', `Permission de ${e.nom || '—'} : fin de permission dans ${restants} jour${restants>1?'s':''} (${fmtDate(e.fin)}) — prévoir le retour.`, r.label);
-        }
-        if(e.jours_restants_annee !== undefined && e.jours_restants_annee !== ''){
-          const v = Number(e.jours_restants_annee);
-          if(!isNaN(v)){
-            if(v < 0 || v > 45) push('mid', `${e.nom || '—'} : « Jours restants à prendre » incohérent (${v}) — à vérifier.`, r.label);
-            else if(v === 0) push('mid', `${e.nom || '—'} : quota de jours restants à prendre épuisé (0 jour).`, r.label);
-          }
-        }
-        if(e.jours_restants_45 !== undefined && e.jours_restants_45 !== ''){
-          const v = Number(e.jours_restants_45);
-          if(!isNaN(v)){
-            if(v < 0 || v > 45) push('mid', `${e.nom || '—'} : « Jours restants (congé 45 jours) » incohérent (${v}) — à vérifier.`, r.label);
-            else if(v === 0) push('mid', `${e.nom || '—'} : quota du congé 45 jours épuisé (0 jour restant).`, r.label);
-          }
-        }
-      });
-    }
-    if(r.key === 'batteries'){
-      const lastCheck = parseDate(d.extra.derniere_verif_banc);
-      if(!lastCheck){ if(rubriqueEnCours(d)) push('mid', `Vérification hebdomadaire du banc de charge non renseignée.`, r.label); }
-      else { const days = daysBetween(lastCheck, TODAY); if(days > 7) push('high', `Banc de charge non vérifié depuis ${days} jours (contrôle hebdomadaire requis).`, r.label); }
-      const calib = parseDate(d.extra.prochaine_calibration_banc);
-      if(calib){ const days = daysBetween(TODAY, calib); if(days <= 90 && days >= 0) push('mid', `Calibration du banc de charge dans ${days} jours (${fmtDate(d.extra.prochaine_calibration_banc)}) — à anticiper.`, r.label);
-        else if(days < 0) push('high', `Calibration du banc de charge dépassée (${fmtDate(d.extra.prochaine_calibration_banc)}).`, r.label); }
-      (d.entries||[]).forEach(e=>{
-        const rec = parseDate(e.prochaine_recharge);
-        if(rec && daysBetween(rec, TODAY) > 0) push('high', `Batterie ${e.batterie || '—'} : recharge prévue le ${fmtDate(e.prochaine_recharge)} dépassée.`, r.label);
-      });
-    }
-    if(r.key === 'points_fixes'){
-      (d.entries||[]).forEach(e=>{
-        const last = parseDate(e.dernier_point_fixe);
-        if(last){
-          const days = daysBetween(last, TODAY);
-          if(days > 21) push('high', `${e.helico || '—'} : ${days} jours depuis le dernier point fixe (max. 21 jours) — RETARD.`, r.label);
-          else if(days >= 18) push('mid', `${e.helico || '—'} : ${days} jours depuis le dernier point fixe — échéance proche (max. 21 jours).`, r.label);
-        }
-      });
-      const lastSend = parseDate(d.extra.dernier_envoi_hebdo);
-      if(lastSend){ const days = daysBetween(lastSend, TODAY); if(days > 7) push('mid', `État des points fixes non envoyé depuis ${days} jours (envoi hebdomadaire requis).`, r.label); }
-    }
-    if(r.key === 'proprete_aero'){
-      (d.entries||[]).slice(-10).forEach(e=>{
-        if(e.avant_vol === 'Anomalie' || e.apres_vol === 'Anomalie' || e.fod === 'Oui')
-          push('mid', `${e.avion || '—'} (${fmtDate(e.date)}) : anomalie de propreté ou FOD relevé.`, r.label);
-      });
-    }
-    if(r.key === 'proprete_env'){
-      (d.entries||[]).slice(-10).forEach(e=>{
-        if(e.etat === 'Écart constaté') push('mid', `${e.zone || '—'} (${fmtDate(e.date)}) : écart de propreté constaté.`, r.label);
-      });
+  DATA.fiches.forEach(f=>{
+    if(f.echeance && f.statut !== 'Réalisée' && f.statut !== 'Clôturée'){
+      const ech = parseDate(f.echeance);
+      if(ech && daysBetween(ech, TODAY) > 0) push('high', `Fiche ${f.ref} "${f.titre || FICHE_TYPES[f.type].label}" : échéance dépassée (${fmtDate(f.echeance)}).`, FICHE_TYPES[f.type].label);
     }
   });
-
-  // Effectifs : ASM (absence sans motif) sur la dernière situation renseignée
-  const lastSituation = DATA.effectifs.situations.slice().sort((a,b)=> b.date.localeCompare(a.date))[0];
-  if(lastSituation){
-    lastSituation.rows.forEach(r=>{
-      if(r.statut === 'ASM'){
-        const a = DATA.effectifs.agents.find(x=>x.id===r.agentId);
-        push('high', `${a ? (a.grade+' '+a.prenoms+' '+a.nom) : 'Élément'} : Absence Sans Motif relevée le ${fmtDate(lastSituation.date)}.`, 'Effectifs');
-      }
-    });
-  }
-  // Effectifs : situation journalière du jour non renseignée
-  if(DATA.effectifs.agents.length){
-    const todayStr = todayISO();
-    if(!lastSituation){
-      push('mid', `Aucune situation journalière n'a encore été renseignée.`, 'Effectifs');
-    } else if(lastSituation.date !== todayStr){
-      push('mid', `Situation journalière non renseignée pour aujourd'hui — dernière mise à jour : ${fmtDate(lastSituation.date)}.`, 'Effectifs');
-    }
-  }
 
   return alerts.sort((a,b)=> (a.sev==='high'?0:1) - (b.sev==='high'?0:1));
 }
@@ -1184,16 +933,18 @@ function renderOverview(){
   const alerts = computeAlerts();
   const high = alerts.filter(a=>a.sev==='high').length;
   const mid = alerts.filter(a=>a.sev==='mid').length;
-  const highRubs = new Set(alerts.filter(a=>a.sev==='high').map(a=>a.src)).size;
+  const nbFiches = DATA.fiches.length;
+  const realisees = DATA.fiches.filter(f=>f.statut==='Réalisée' || f.statut==='Clôturée').length;
+  const tauxInstruction = nbFiches ? Math.round(realisees/nbFiches*100) : 0;
 
   let html = '';
-  html += `<div class="page-head"><div><h2>Vue d'ensemble</h2><div class="desc">Situation consolidée — Maintenance, ${new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div></div></div>`;
+  html += `<div class="page-head"><div><h2>Vue d'ensemble</h2><div class="desc">Situation consolidée — Bureau Instruction, ${new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div></div></div>`;
 
   html += `<div class="stat-strip">
     <div class="stat-card ${high?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
-    <div class="stat-card"><div class="num">${RUBRIQUES.filter(r=>!EFFECTIFS_ONLY_RUBRIQUES.includes(r.key)).length}</div><div class="lbl">Rubriques maintenance</div></div>
-    <div class="stat-card ${high?'is-alert':''}"><div class="num">${highRubs}</div><div class="lbl">Rubriques en alerte</div></div>
-    <div class="stat-card"><div class="num">${mid}</div><div class="lbl">Points de vigilance</div></div>
+    <div class="stat-card"><div class="num">${nbFiches}</div><div class="lbl">Fiches instruction</div></div>
+    <div class="stat-card"><div class="num">${tauxInstruction}%</div><div class="lbl">Taux de réalisation</div></div>
+    <div class="stat-card"><div class="num">${DATA.fiches.filter(f=>f.statut==='En cours').length}</div><div class="lbl">Fiches en cours</div></div>
   </div>`;
 
   html += `<div class="alerts-panel">
@@ -1212,14 +963,16 @@ function renderOverview(){
 }
 
 /* ============================================================
-   Rendering — Maintenance
+   Rendering — Instruction
    ============================================================ */
-function rubStatus(r){
-  const d = DATA.maintenance[r.key];
-  const a = computeAlerts().filter(x=>x.src===r.label);
-  if(a.some(x=>x.sev==='high')) return 'alert';
-  if(a.some(x=>x.sev==='mid')) return 'warn';
-  return 'ok';
+function ficheStatusClass(f){
+  if(f.echeance && f.statut!=='Réalisée' && f.statut!=='Clôturée'){
+    const ech = parseDate(f.echeance);
+    if(ech && daysBetween(ech,TODAY)>0) return 'st-retard';
+  }
+  if(f.statut==='Réalisée' || f.statut==='Clôturée') return 'st-realisee';
+  if(f.statut==='En cours') return 'st-cours';
+  return '';
 }
 
 /* ============================================================
@@ -1234,16 +987,13 @@ function buildAdminSnapshot(){
   if(clone.settings){
     if(clone.settings.appSecret) clone.settings.appSecret = '••••••••';
   }
-  // Les pièces jointes (photos/PDF) des éléments sont résumées plutôt
-  // qu'affichées en entier : leur contenu brut (base64) rendrait
-  // l'aperçu illisible.
-  if(clone.effectifs && Array.isArray(clone.effectifs.agents)){
-    clone.effectifs.agents.forEach(a=>{
-      if(Array.isArray(a.pieces)){
-        a.pieces = a.pieces.map(p=> ({ id:p.id, name:p.name, mime:p.mime, size:p.size, dataUrl:'[donnée image/PDF non affichée ici]' }));
-      }
-    });
-  }
+  // Les pièces jointes (photos/PDF) sont résumées plutôt qu'affichées en
+  // entier : leur contenu brut (base64) rendrait l'aperçu illisible.
+  (clone.fiches || []).forEach(f=>{
+    if(Array.isArray(f.pieces)){
+      f.pieces = f.pieces.map(p=> ({ id:p.id, name:p.name, mime:p.mime, size:p.size, dataUrl:'[donnée image/PDF non affichée ici]' }));
+    }
+  });
   return clone;
 }
 
@@ -1381,14 +1131,14 @@ function renderAdmin(){
 
   const snapshot = buildAdminSnapshot();
   const alerts = computeAlerts();
-  const nbEntries = RUBRIQUES.reduce((s,r)=> s + ((DATA.maintenance[r.key] && DATA.maintenance[r.key].entries) ? DATA.maintenance[r.key].entries.length : 0), 0);
+  const nbTypes = new Set(DATA.fiches.map(f=>f.type)).size;
 
-  html += `<div class="settings-note" style="margin-bottom:16px;">Vue instantanée de tout ce qui est actuellement saisi dans l'appli — toutes les rubriques, tous les éléments et la situation du jour, à l'instant où tu ouvres cette page.</div>`;
+  html += `<div class="settings-note" style="margin-bottom:16px;">Vue instantanée de tout ce qui est actuellement saisi dans l'appli — toutes les fiches et tous leurs champs, à l'instant où tu ouvres cette page.</div>`;
 
   html += `<div class="stat-strip" style="margin-bottom:20px;">
-    <div class="stat-card"><div class="num">${RUBRIQUES.length}</div><div class="lbl">Rubriques enregistrées</div></div>
-    <div class="stat-card"><div class="num">${nbEntries}</div><div class="lbl">Lignes de données</div></div>
-    <div class="stat-card"><div class="num">${DATA.effectifs.agents.length}</div><div class="lbl">Éléments (effectifs)</div></div>
+    <div class="stat-card"><div class="num">${DATA.fiches.length}</div><div class="lbl">Fiches enregistrées</div></div>
+    <div class="stat-card"><div class="num">${nbTypes}</div><div class="lbl">Types de fiches représentés</div></div>
+    <div class="stat-card"><div class="num">${DATA.fiches.filter(f=>f.valide).length}</div><div class="lbl">Fiches validées</div></div>
     <div class="stat-card ${alerts.length?'is-alert':''}"><div class="num">${alerts.length}</div><div class="lbl">Alertes actives</div></div>
   </div>`;
 
@@ -1399,7 +1149,7 @@ function renderAdmin(){
 
   html += `<details class="responsibilities" style="margin-top:20px;">
     <summary>Version technique (JSON) — pour export ou copie</summary>
-    <div class="settings-note" style="margin:10px 0;">Le secret d'application est masqué ci-dessous par sécurité (visible dans Paramètres si besoin) ; les photos/PDF joints aux éléments sont résumés (nom, taille) plutôt qu'affichés en entier.</div>
+    <div class="settings-note" style="margin:10px 0;">Le secret d'application est masqué ci-dessous par sécurité (visible dans Paramètres si besoin) ; les photos/PDF joints sont résumés (nom, taille) plutôt qu'affichés en entier.</div>
     <pre class="code-block" id="admin-payload-json" style="max-height:520px;">${esc(JSON.stringify(snapshot, null, 2))}</pre>
     <div class="row-actions" style="margin-top:8px;">
       <button class="btn ghost" id="btn-admin-copy">Copier le JSON</button>
@@ -1410,329 +1160,214 @@ function renderAdmin(){
   document.getElementById('app-root').innerHTML = wrapView(html);
 }
 
-/* Affichage lisible (tableaux) des données de l'appli, dans le même style
-   que le reste du logiciel — pour un administrateur qui n'a pas à lire du
-   JSON pour comprendre ce qui est enregistré. */
+/* Affichage lisible (tableau) des fiches, dans le même style que le reste du
+   logiciel — pour un administrateur qui n'a pas à lire du JSON pour
+   comprendre ce qui est enregistré. */
 function renderAdminReadable(snapshot){
-  let html = '';
+  let html = `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Toutes les fiches</h3>`;
 
-  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:20px 0 10px;">Rubriques de maintenance</h3>`;
-  RUBRIQUES.forEach(r=>{
-    const d = snapshot.maintenance[r.key] || { responsable:'', suppleants:'', entries:[] };
-    html += `<div class="rub-card open" style="margin-bottom:14px;">
-      <div class="rub-head"><h3>${esc(r.label)}</h3></div>
-      <div class="rub-body">
-        <div class="resp-row" style="margin-bottom:10px;">
-          <div><b>Responsable</b> — ${esc(d.responsable || '—')}</div>
-          <div><b>Suppléant(s)</b> — ${esc(d.suppleants || '—')}</div>
-        </div>`;
-    if(d.entries && d.entries.length){
-      html += `<div class="table-wrap"><table><thead><tr>`;
-      r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
-      html += `</tr></thead><tbody>`;
-      d.entries.forEach(e=>{
-        html += `<tr>`;
-        r.entryCols.forEach(c=> html += `<td>${esc(e[c.key] != null && e[c.key] !== '' ? e[c.key] : '—')}</td>`);
-        html += `</tr>`;
-      });
-      html += `</tbody></table></div>`;
-    } else {
-      html += `<div class="settings-note">Aucune entrée dans cette rubrique.</div>`;
-    }
-    html += `</div></div>`;
+  if(!snapshot.fiches.length){
+    html += `<div class="settings-note">Aucune fiche enregistrée.</div>`;
+    return html;
+  }
+
+  html += `<div class="table-wrap"><table><thead><tr>
+    <th>Référence</th><th>Type</th><th>Titre</th><th>Date</th><th>Responsable</th><th>Statut</th><th>Échéance</th><th>Validée</th>
+  </tr></thead><tbody>`;
+  snapshot.fiches.forEach(f=>{
+    const typeLabel = FICHE_TYPES[f.type] ? FICHE_TYPES[f.type].label : f.type;
+    html += `<tr class="${f.valide ? '' : ''}">
+      <td class="mono">${esc(f.ref || '—')}</td>
+      <td>${esc(typeLabel)}</td>
+      <td>${esc(f.titre || '—')}</td>
+      <td>${fmtDate(f.date)}</td>
+      <td>${esc(f.responsable || '—')}</td>
+      <td>${esc(f.statut || '—')}</td>
+      <td>${fmtDate(f.echeance)}</td>
+      <td>${f.valide ? `<span class="badge ok">Validée le ${fmtDate(f.valideLe)}</span>` : '<span class="badge neutral">Non</span>'}</td>
+    </tr>`;
   });
-
-  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:24px 0 10px;">Éléments (effectifs)</h3>`;
-  if(snapshot.effectifs.agents.length){
-    html += `<div class="table-wrap"><table><thead><tr>
-      <th>Grade</th><th>Prénoms</th><th>Nom</th><th>ID / Matricule</th><th>Qualification</th><th>Parrainage</th>
-    </tr></thead><tbody>`;
-    snapshot.effectifs.agents.forEach(a=>{
-      html += `<tr>
-        <td>${esc(a.grade || '—')}</td><td>${esc(a.prenoms || '—')}</td><td>${esc(a.nom || '—')}</td>
-        <td class="mono">${esc(a.idNum || '—')}</td><td>${esc(a.qualification || '—')}</td>
-        <td>${[a.parrain?'Parrain':null, a.parraine?'Parrainé':null].filter(Boolean).join(' + ') || '—'}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div>`;
-  } else {
-    html += `<div class="settings-note">Aucun élément enregistré.</div>`;
-  }
-
-  html += `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--sky); margin:24px 0 10px;">Situation journalière</h3>`;
-  if(snapshot.effectifs.situations && snapshot.effectifs.situations.length){
-    html += `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Éléments renseignés</th></tr></thead><tbody>`;
-    snapshot.effectifs.situations.forEach(s=>{
-      html += `<tr><td>${fmtDate(s.date)}</td><td>${(s.rows && s.rows.length) || 0}</td></tr>`;
-    });
-    html += `</tbody></table></div>`;
-  } else {
-    html += `<div class="settings-note">Aucune situation journalière enregistrée.</div>`;
-  }
+  html += `</tbody></table></div>`;
 
   return html;
 }
 
-function renderMaintenance(){
-  let html = `<div class="page-head"><div><h2>Maintenance</h2><div class="desc">Rubriques de suivi — responsables, données et alertes</div></div></div>`;
-  html += `<div class="rub-grid">`;
-  RUBRIQUES.filter(r=> !EFFECTIFS_ONLY_RUBRIQUES.includes(r.key)).forEach(r=>{
-    const d = DATA.maintenance[r.key];
-    const open = OPEN_RUB === r.key;
-    const st = rubStatus(r);
-    const stLabel = st==='alert' ? 'Alerte' : st==='warn' ? 'Vigilance' : 'OK';
-    html += `<div class="rub-card ${open?'open':''}" data-rub="${r.key}">
-      <div class="rub-head" data-toggle-rub="${r.key}">
-        <h3>${esc(r.label)}</h3>
-        <div class="rub-badges">
-          <span class="badge ${st}">${stLabel}</span>
-          <span class="rub-toggle">▾</span>
+
+function renderInstruction(){
+  let html = `<div class="page-head"><div><h2>Bureau Instruction</h2><div class="desc">Fiches types — planification, suivi, évaluation, adaptation, cohésion, présence</div></div></div>`;
+
+  html += `<div class="fiche-toolbar">
+    <select id="fiche-filter">
+      <option value="ALL" ${FICHE_FILTER==='ALL'?'selected':''}>Tous les types</option>`;
+  Object.keys(FICHE_TYPES).forEach(k=> html += `<option value="${k}" ${FICHE_FILTER===k?'selected':''}>${esc(FICHE_TYPES[k].label)}</option>`);
+  html += `</select>
+    <button class="btn gold" id="btn-new-fiche">+ Nouvelle fiche</button>
+  </div>`;
+
+  html += `<div class="settings-note" style="margin-bottom:16px;">🔒 Une fiche <b>validée</b> devient définitive : ni modification ni suppression ne sont plus possibles, pour personne. Vérifiez toutes les informations avant de valider.</div>`;
+
+  const list = DATA.fiches.filter(f=> FICHE_FILTER==='ALL' || f.type===FICHE_FILTER)
+                          .sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+
+  if(list.length===0){
+    html += `<div class="empty-state">Aucune fiche enregistrée${FICHE_FILTER!=='ALL' ? ' pour ce type' : ''}. Cliquez sur « + Nouvelle fiche » pour commencer.</div>`;
+  } else {
+    html += `<div class="fiche-grid">`;
+    list.forEach(f=>{
+      const type = FICHE_TYPES[f.type];
+      html += `<div class="fiche-card ${ficheStatusClass(f)}">
+        <div class="fiche-top">
+          <span class="fiche-ref mono">${esc(f.ref)}${f.valide?' 🔒':''}</span>
+          <span class="badge ${f.statut==='Réalisée'||f.statut==='Clôturée'?'ok':(ficheStatusClass(f)==='st-retard'?'alert':'warn')}">${esc(f.statut)}</span>
         </div>
-      </div>
-      <div class="rub-body">`;
-
-    html += `<details class="responsibilities"><summary>Responsabilités de la rubrique (${r.responsibilities.length})</summary><ul>`;
-    r.responsibilities.forEach(x=> html += `<li>${esc(x)}</li>`);
-    html += `</ul></details>`;
-
-    html += `<div class="resp-row">
-      <div class="field-group"><label>Responsable</label><input type="text" data-resp="${r.key}" data-field="responsable" value="${esc(d.responsable)}" placeholder="Nom, grade"></div>
-      <div class="field-group"><label>Suppléant(s)</label><input type="text" data-resp="${r.key}" data-field="suppleants" value="${esc(d.suppleants)}" placeholder="Nom(s)"></div>`;
-    r.extraFields.forEach(f=>{
-      html += `<div class="field-group"><label>${esc(f.label)}</label><input type="${f.type}" data-extra="${r.key}" data-field="${f.key}" value="${esc(d.extra[f.key]||'')}"></div>`;
+        <div class="fiche-title">${esc(f.titre || type.label)}</div>
+        <div class="fiche-meta">
+          <div><b>Type</b> — ${esc(type.label)}</div>
+          <div><b>Date</b> — ${fmtDate(f.date)}</div>
+          <div><b>Responsable</b> — ${esc(f.responsable || '—')}</div>
+          ${f.echeance ? `<div><b>Échéance</b> — ${fmtDate(f.echeance)}</div>` : ''}
+          ${(f.pieces && f.pieces.length) ? `<div><b>Pièces jointes</b> — 📎 ${f.pieces.length}</div>` : ''}
+        </div>
+        <div class="fiche-actions">
+          ${f.valide
+            ? `<span class="badge ok lock-badge">🔒 Validée le ${fmtDate(f.valideLe)}</span>`
+            : `<button class="icon-btn" data-edit-fiche="${f.id}">Modifier</button>
+               <button class="icon-btn" data-del-fiche="${f.id}">Supprimer</button>
+               <button class="icon-btn validate-btn" data-validate-fiche="${f.id}">Valider</button>`
+          }
+        </div>
+      </div>`;
     });
     html += `</div>`;
+  }
 
-    html += `<div class="table-wrap"><table><thead><tr>`;
-    r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
-    html += `<th></th></tr></thead><tbody>`;
-    if(!d.entries || d.entries.length===0){
-      html += `<tr><td colspan="${r.entryCols.length+1}" style="color:var(--ink-soft); font-style:italic;">Aucune entrée. Ajoutez la première ligne ci-dessous.</td></tr>`;
-    } else {
-      d.entries.forEach(e=>{
-        let rowClass = '';
-        if(r.key==='permissions'){ const fin=parseDate(e.fin); if(fin){ const restants=daysBetween(TODAY,fin); if(restants<0) rowClass='row-alert'; else if(restants<=2) rowClass='row-warn'; } }
-        if(r.key==='points_fixes'){ const last=parseDate(e.dernier_point_fixe); if(last){ const days=daysBetween(last,TODAY); if(days>21) rowClass='row-alert'; else if(days>=18) rowClass='row-warn'; } }
-        if(r.key==='batteries'){ const rec=parseDate(e.prochaine_recharge); if(rec && daysBetween(rec,TODAY)>0) rowClass='row-alert'; }
-        html += `<tr class="${rowClass}" data-entry-row="${r.key}" data-entry-id="${e.id}">`;
-        r.entryCols.forEach(c=>{
-          if(c.type==='select'){
-            html += `<td><select data-entry="${r.key}" data-eid="${e.id}" data-field="${c.key}">`;
-            c.options.forEach(o=> html += `<option value="${esc(o)}" ${e[c.key]===o?'selected':''}>${esc(o)}</option>`);
-            html += `</select></td>`;
-          } else {
-            html += `<td><input type="${c.type}" data-entry="${r.key}" data-eid="${e.id}" data-field="${c.key}" value="${esc(e[c.key]||'')}" ${c.min!==undefined?`min="${c.min}"`:''} ${c.max!==undefined?`max="${c.max}"`:''}></td>`;
-          }
-        });
-        html += `<td><button class="del-btn" data-del-entry="${r.key}" data-eid="${e.id}" title="Supprimer">&times;</button></td></tr>`;
-        // computed helper column info as extra row note for points_fixes / permissions
-      });
-    }
-    html += `</tbody></table></div>`;
-    html += `<div class="row-actions"><button class="add-row-btn" data-add-entry="${r.key}">+ Ajouter une ligne</button></div>`;
-
-    html += `</div></div>`;
-  });
-  html += `</div>`;
   document.getElementById('app-root').innerHTML = wrapView(html);
 }
+
+function wrapView(inner){ return inner; }
 
 /* ============================================================
    Main render dispatcher
    ============================================================ */
+function render(){
+  if(ACTIVE_VIEW==='overview') renderOverview();
+  else if(ACTIVE_VIEW==='instruction') renderInstruction();
+  else if(ACTIVE_VIEW==='admin') renderAdmin();
+  bindDynamicEvents();
+}
+
+function switchView(view){
+  ACTIVE_VIEW = view;
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.view===view));
+  render();
+}
+
 /* ============================================================
-   Rendering — Effectifs
+   Modal — Fiche editor
    ============================================================ */
-function getOrCreateSituation(dateStr){
-  let s = DATA.effectifs.situations.find(x=>x.date===dateStr);
-  if(!s){
-    s = { id: uid(), date: dateStr, rows: [], pieces: [] };
-    DATA.effectifs.situations.push(s);
+let editingFicheId = null;
+let MODAL_PIECES = []; // pièces jointes (photos/scans) en cours d'édition dans le modal
+
+function nextRef(type){
+  DATA.fichesSeq[type] = (DATA.fichesSeq[type]||0) + 1;
+  const n = String(DATA.fichesSeq[type]).padStart(3,'0');
+  return `${FICHE_TYPES[type].ref}-${n}`;
+}
+
+/* Seuls ces types de fiches disposent de l'onglet « Importer fiche »
+   (photo/scan du document papier) : Présence et Évaluation du niveau
+   d'adaptation. */
+function typeSupportsImport(type){
+  return type === 'PRES' || type === 'ADA';
+}
+
+function openFicheModal(ficheId){
+  const f = ficheId ? DATA.fiches.find(x=>x.id===ficheId) : null;
+  if(f && f.valide){
+    alert(`Cette fiche a été validée le ${fmtDate(f.valideLe)} : elle est définitive et ne peut plus être modifiée.`);
+    return;
   }
-  if(!Array.isArray(s.pieces)) s.pieces = [];
-  // ensure every registered agent has a row for this date
-  DATA.effectifs.agents.forEach(a=>{
-    if(!s.rows.find(r=>r.agentId===a.id)){
-      s.rows.push({ id: uid(), agentId: a.id, statut: 'Présent', motif:'', obs:'' });
-    }
+  editingFicheId = ficheId || null;
+  const type = f ? f.type : (Object.keys(FICHE_TYPES).includes(FICHE_FILTER) ? FICHE_FILTER : 'PLA');
+  MODAL_PIECES = (f && Array.isArray(f.pieces)) ? f.pieces.map(p=> Object.assign({}, p)) : [];
+
+  document.getElementById('modal-title').textContent = f ? `Modifier — ${f.ref}` : 'Nouvelle fiche';
+
+  let info = `<div class="field-full"><label>Type de fiche</label>
+    <select id="f-type" ${f?'disabled':''}>`;
+  Object.keys(FICHE_TYPES).forEach(k=> info += `<option value="${k}" ${type===k?'selected':''}>${esc(FICHE_TYPES[k].label)} (${FICHE_TYPES[k].ref})</option>`);
+  info += `</select></div>`;
+
+  info += `<div class="field-full"><label>Intitulé / titre de l'activité</label><input type="text" id="f-titre" value="${esc(f?f.titre:'')}"></div>`;
+  info += `<div class="field-full"><label>Date</label><input type="date" id="f-date" value="${esc(f?f.date:todayISO())}"></div>`;
+  info += `<div class="field-full"><label>Responsable</label><input type="text" id="f-responsable" value="${esc(f?f.responsable:'')}"></div>`;
+  info += `<div class="field-full"><label>Statut</label><select id="f-statut">`;
+  STATUTS.forEach(s=> info += `<option value="${s}" ${f&&f.statut===s?'selected':''}>${s}</option>`);
+  info += `</select></div>`;
+  info += `<div class="field-full"><label>Échéance (optionnel — déclenche une alerte si dépassée)</label><input type="date" id="f-echeance" value="${esc(f?f.echeance||'':'')}"></div>`;
+
+  info += `<div id="f-specific-fields"></div>`;
+  info += `<div class="field-full"><label>Notes / observations</label><textarea id="f-notes">${esc(f?f.notes:'')}</textarea></div>`;
+
+  const importHtml = `
+    <div class="settings-note">Ajoutez une photo ou un scan du document papier correspondant à cette fiche (ex. feuille d'émargement signée, formulaire d'évaluation rempli à la main). Formats acceptés : images (JPG, PNG…) et PDF. Les photos sont automatiquement compressées.</div>
+    <label class="btn ghost" for="f-attach-input" style="align-self:flex-start;">+ Ajouter photo / document</label>
+    <input type="file" id="f-attach-input" accept="image/*,application/pdf" multiple style="display:none;">
+    <div id="attach-list"></div>`;
+
+  const body = `<div class="modal-tabs">
+      <button type="button" class="modal-tab-btn active" data-modal-tab="info">Informations</button>
+      <button type="button" class="modal-tab-btn" id="modal-tab-btn-import" data-modal-tab="import" style="display:none;">Importer fiche</button>
+    </div>
+    <div class="modal-tab-content active" id="modal-tab-info">${info}</div>
+    <div class="modal-tab-content" id="modal-tab-import">${importHtml}</div>`;
+
+  document.getElementById('modal-body').innerHTML = body;
+  renderSpecificFields(type, f);
+  updateImportTabVisibility(type);
+  renderAttachList();
+
+  document.getElementById('f-type').addEventListener('change', (e)=>{
+    renderSpecificFields(e.target.value, f);
+    updateImportTabVisibility(e.target.value);
   });
-  // drop rows for agents no longer in the roster
-  s.rows = s.rows.filter(r=> DATA.effectifs.agents.some(a=>a.id===r.agentId));
-  return s;
-}
-
-function renderEffectifs(){
-  if(!EFFECTIFS_DATE) EFFECTIFS_DATE = todayISO();
-  let html = `<div class="page-head"><div><h2>Gestion des effectifs</h2><div class="desc">Répertoire du personnel et situation journalière (présent / permission / mission / stage / ASM)</div></div></div>`;
-
-  const permStatus = rubStatus(RUBRIQUES.find(r=>r.key==='permissions'));
-  const permBadge = permStatus !== 'ok' ? ` <span class="badge ${permStatus}">${permStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
-  const couleursStatus = rubStatus(RUBRIQUES.find(r=>r.key==='couleurs_presence'));
-  const couleursBadge = couleursStatus !== 'ok' ? ` <span class="badge ${couleursStatus}">${couleursStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
-  const ppvStatus = rubStatus(RUBRIQUES.find(r=>r.key==='ppv_groupe'));
-  const ppvBadge = ppvStatus !== 'ok' ? ` <span class="badge ${ppvStatus}">${ppvStatus==='alert'?'Alerte':'Vigilance'}</span>` : '';
-
-  html += `<div class="fiche-toolbar">
-    <button class="btn ${EFFECTIFS_SUBVIEW==='agents'?'gold':'ghost'}" data-eff-subview="agents">Répertoire des éléments</button>
-    <button class="btn ${EFFECTIFS_SUBVIEW==='situation'?'gold':'ghost'}" data-eff-subview="situation">Situation journalière</button>
-    <button class="btn ${EFFECTIFS_SUBVIEW==='permissions'?'gold':'ghost'}" data-eff-subview="permissions">Suivi des permissions${permBadge}</button>
-    <button class="btn ${EFFECTIFS_SUBVIEW==='couleurs'?'gold':'ghost'}" data-eff-subview="couleurs">Liste présence Couleurs${couleursBadge}</button>
-    <button class="btn ${EFFECTIFS_SUBVIEW==='ppv'?'gold':'ghost'}" data-eff-subview="ppv">Liste groupe PPV${ppvBadge}</button>
-  </div>`;
-
-  if(EFFECTIFS_SUBVIEW === 'agents'){
-    html += renderAgentsRoster();
-  } else if(EFFECTIFS_SUBVIEW === 'permissions'){
-    html += renderRubriqueEffectif('permissions');
-  } else if(EFFECTIFS_SUBVIEW === 'couleurs'){
-    html += renderRubriqueEffectif('couleurs_presence');
-  } else if(EFFECTIFS_SUBVIEW === 'ppv'){
-    html += renderRubriqueEffectif('ppv_groupe');
-  } else {
-    html += renderSituationJournaliere();
-  }
-
-  document.getElementById('app-root').innerHTML = wrapView(html);
-}
-
-function renderAgentsRoster(){
-  const agents = DATA.effectifs.agents;
-  let html = `<div class="row-actions" style="margin-bottom:14px;"><button class="add-row-btn" id="btn-new-agent">+ Ajouter un élément</button></div>`;
-  if(!agents.length){
-    html += `<div class="empty-state">Aucun élément enregistré. Clique sur « + Ajouter un élément » pour commencer.</div>`;
-    return html;
-  }
-  html += `<div class="table-wrap"><table><thead><tr>
-    <th>Grade</th><th>Prénoms</th><th>Nom</th><th>ID / Matricule</th><th>Qualification</th><th>Parrainage</th><th>Pièces</th><th></th>
-  </tr></thead><tbody>`;
-  agents.forEach(a=>{
-    html += `<tr>
-      <td>${esc(a.grade)}</td><td>${esc(a.prenoms)}</td><td>${esc(a.nom)}</td>
-      <td class="mono">${esc(a.idNum)}</td><td>${esc(a.qualification)}</td>
-      <td>${[a.parrain?'Parrain':null, a.parraine?'Parrainé':null].filter(Boolean).join(' + ') || '—'}</td>
-      <td>${(a.pieces && a.pieces.length) ? `📎 ${a.pieces.length}` : '—'}</td>
-      <td style="white-space:nowrap;">
-        <button class="icon-btn" data-edit-agent="${a.id}">Modifier</button>
-        <button class="icon-btn" data-del-agent="${a.id}">Supprimer</button>
-      </td>
-    </tr>`;
+  document.getElementById('f-attach-input').addEventListener('change', (e)=>{
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    files.forEach(file=> processAttachmentFile(file));
   });
-  html += `</tbody></table></div>`;
-  return html;
+  document.querySelectorAll('.modal-tab-btn').forEach(b=>{
+    b.addEventListener('click', ()=> switchModalTab(b.dataset.modalTab));
+  });
+
+  document.getElementById('modal-bg').classList.add('open');
 }
 
-/* Rendu générique d'une rubrique (responsable/suppléants, champs extra, tableau
-   de lignes remplissable) affichée dans Gestion des effectifs plutôt que dans
-   la grille Maintenance. Utilisé pour Suivi des permissions, Présence Couleurs
-   et Groupe PPV — mêmes données et logique de rubrique que les autres, seul
-   l'endroit où elles s'affichent change. */
-function renderRubriqueEffectif(rubKey){
-  const r = RUBRIQUES.find(x=>x.key===rubKey);
-  const d = DATA.maintenance[rubKey];
-  const showRespRow = (rubKey !== 'couleurs_presence' && rubKey !== 'ppv_groupe');
-
-  let html = `<details class="responsibilities"><summary>Responsabilités de la rubrique (${r.responsibilities.length})</summary><ul>`;
-  r.responsibilities.forEach(x=> html += `<li>${esc(x)}</li>`);
-  html += `</ul></details>`;
-
-  if(showRespRow){
-    html += `<div class="resp-row">
-      <div class="field-group"><label>Responsable</label><input type="text" data-resp="${rubKey}" data-field="responsable" value="${esc(d.responsable)}"></div>
-      <div class="field-group"><label>Suppléant(s)</label><input type="text" data-resp="${rubKey}" data-field="suppleants" value="${esc(d.suppleants)}"></div>`;
-    r.extraFields.forEach(f=>{
-      html += `<div class="field-group"><label>${esc(f.label)}</label><input type="${f.type}" data-extra="${rubKey}" data-field="${f.key}" value="${esc(d.extra[f.key]||'')}"></div>`;
-    });
-    html += `</div>`;
-  }
-
-  html += `<div class="table-wrap"><table><thead><tr>`;
-  r.entryCols.forEach(c=> html += `<th>${esc(c.label)}</th>`);
-  html += `<th></th></tr></thead><tbody>`;
-  if(!d.entries || d.entries.length===0){
-    html += `<tr><td colspan="${r.entryCols.length+1}" style="color:var(--ink-soft); font-style:italic;">Aucune entrée. Ajoutez la première ligne ci-dessous.</td></tr>`;
-  } else {
-    d.entries.forEach(e=>{
-      let rowClass = '';
-      if(rubKey === 'permissions'){
-        const fin = parseDate(e.fin);
-        if(fin){ const restants = daysBetween(TODAY, fin); if(restants<0) rowClass='row-alert'; else if(restants<=2) rowClass='row-warn'; }
-      }
-      html += `<tr class="${rowClass}" data-entry-row="${rubKey}" data-entry-id="${e.id}">`;
-      r.entryCols.forEach(c=>{
-        if(c.type==='select'){
-          html += `<td><select data-entry="${rubKey}" data-eid="${e.id}" data-field="${c.key}">`;
-          c.options.forEach(o=> html += `<option value="${esc(o)}" ${e[c.key]===o?'selected':''}>${esc(o)}</option>`);
-          html += `</select></td>`;
-        } else {
-          html += `<td><input type="${c.type}" data-entry="${rubKey}" data-eid="${e.id}" data-field="${c.key}" value="${esc(e[c.key]||'')}" ${c.min!==undefined?`min="${c.min}"`:''} ${c.max!==undefined?`max="${c.max}"`:''}></td>`;
-        }
-      });
-      html += `<td><button class="del-btn" data-del-entry="${rubKey}" data-eid="${e.id}" title="Supprimer">&times;</button></td></tr>`;
-    });
-  }
-  html += `</tbody></table></div>`;
-  html += `<div class="row-actions"><button class="add-row-btn" data-add-entry="${rubKey}">+ Ajouter une ligne</button></div>`;
-  return html;
+function updateImportTabVisibility(type){
+  const btn = document.getElementById('modal-tab-btn-import');
+  if(!btn) return;
+  const supports = typeSupportsImport(type);
+  btn.style.display = supports ? '' : 'none';
+  if(!supports) switchModalTab('info');
+  updateImportTabLabel();
 }
 
-function renderSituationJournaliere(){
-  const s = getOrCreateSituation(EFFECTIFS_DATE);
-  const agents = DATA.effectifs.agents;
-
-  const counts = {};
-  EFFECTIF_STATUTS.forEach(st=> counts[st]=0);
-  s.rows.forEach(r=>{ if(counts[r.statut]!==undefined) counts[r.statut]++; });
-  const total = agents.length;
-  const present = counts['Présent'];
-  const permissionnaires = counts['PCD']+counts['PRLD']+counts['PTC'];
-  const absent = counts['ASM'];
-  const indisponible = counts['Mission']+counts['Stage']+counts['Indisponible'];
-
-  let html = `<div class="field-full" style="max-width:240px; margin-bottom:16px;">
-    <label>Date de la situation</label>
-    <input type="date" id="eff-date-picker" value="${esc(EFFECTIFS_DATE)}">
-  </div>`;
-
-  html += `<div class="stat-strip">
-    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Effectif réalisé</div></div>
-    <div class="stat-card"><div class="num">${present}</div><div class="lbl">Présent</div></div>
-    <div class="stat-card"><div class="num">${permissionnaires}</div><div class="lbl">En permission (PCD+PRLD+PTC)</div></div>
-    <div class="stat-card ${absent?'is-alert':''}"><div class="num">${absent}</div><div class="lbl">Absent (ASM)</div></div>
-  </div>`;
-
-  html += `<div class="table-wrap"><table><thead><tr>
-    <th>Grade</th><th>Prénoms</th><th>Nom</th><th>Statut</th><th>Motif</th><th>Observation</th>
-  </tr></thead><tbody>`;
-  if(!agents.length){
-    html += `<tr><td colspan="6" style="color:var(--ink-soft); font-style:italic;">Aucun élément enregistré — ajoute d'abord des éléments dans le Répertoire.</td></tr>`;
-  } else {
-    s.rows.forEach(row=>{
-      const a = agents.find(x=>x.id===row.agentId);
-      if(!a) return;
-      const rowClass = row.statut==='ASM' ? 'row-alert' : (row.statut!=='Présent' ? 'row-warn' : '');
-      html += `<tr class="${rowClass}">
-        <td>${esc(a.grade)}</td><td>${esc(a.prenoms)}</td><td>${esc(a.nom)}</td>
-        <td><select data-eff-row="${row.id}" data-field="statut">`;
-      EFFECTIF_STATUTS.forEach(st=> html += `<option value="${esc(st)}" ${row.statut===st?'selected':''}>${esc(EFFECTIF_STATUT_LABELS[st])}</option>`);
-      html += `</select></td>
-        <td><input type="text" data-eff-row="${row.id}" data-field="motif" value="${esc(row.motif)}" placeholder="Précision (n° décision, durée…)"></td>
-        <td><input type="text" data-eff-row="${row.id}" data-field="obs" value="${esc(row.obs)}"></td>
-      </tr>`;
-    });
-  }
-  html += `</tbody></table></div>`;
-
-  html += `<div class="table-wrap" style="margin-top:16px;"><table><thead><tr>
-    <th>PCD</th><th>PRLD</th><th>PTC</th><th>Mission</th><th>Stage</th><th>ASM</th><th>Indisponible</th><th>En service</th>
-  </tr></thead><tbody><tr>
-    <td>${counts['PCD']}</td><td>${counts['PRLD']}</td><td>${counts['PTC']}</td>
-    <td>${counts['Mission']}</td><td>${counts['Stage']}</td><td>${counts['ASM']}</td><td>${counts['Indisponible']}</td><td>${counts['En service']}</td>
-  </tr></tbody></table></div>`;
-
-  return html;
+function updateImportTabLabel(){
+  const btn = document.getElementById('modal-tab-btn-import');
+  if(btn) btn.textContent = `Importer fiche${MODAL_PIECES.length ? ' (' + MODAL_PIECES.length + ')' : ''}`;
 }
 
-/* ---------- Pièces jointes d'un élément (photos / scans) ---------- */
+function switchModalTab(tab){
+  document.querySelectorAll('.modal-tab-btn').forEach(b=>{
+    if(b.style.display === 'none') return;
+    b.classList.toggle('active', b.dataset.modalTab === tab);
+  });
+  document.querySelectorAll('.modal-tab-content').forEach(c=>{
+    c.classList.toggle('active', c.id === 'modal-tab-' + tab);
+  });
+}
+
+/* ---------- Pièces jointes : rendu, ajout, compression, suppression ---------- */
 function formatFileSize(bytes){
   if(!bytes) return '0 o';
   if(bytes < 1024) return bytes + ' o';
@@ -1740,12 +1375,15 @@ function formatFileSize(bytes){
   return (bytes/(1024*1024)).toFixed(2) + ' Mo';
 }
 
-function renderAgentAttachList(pieces){
-  if(!pieces || !pieces.length){
-    return `<div class="empty-note" style="padding:10px 2px;">Aucun fichier importé pour cet élément.</div>`;
+function renderAttachList(){
+  const wrap = document.getElementById('attach-list');
+  if(!wrap) return;
+  if(!MODAL_PIECES.length){
+    wrap.innerHTML = `<div class="empty-note" style="padding:16px 4px;">Aucun fichier importé pour cette fiche.</div>`;
+    return;
   }
   let html = `<div class="attach-grid">`;
-  pieces.forEach(p=>{
+  MODAL_PIECES.forEach(p=>{
     const isImg = (p.mime||'').startsWith('image/');
     html += `<div class="attach-card">
       ${isImg ? `<img src="${p.dataUrl}" class="attach-thumb" alt="${esc(p.name)}">` : `<div class="attach-file-icon">📄</div>`}
@@ -1753,16 +1391,23 @@ function renderAgentAttachList(pieces){
         <div class="attach-name" title="${esc(p.name)}">${esc(p.name)}</div>
         <div class="attach-size mono">${formatFileSize(p.size)}</div>
       </div>
-      <button type="button" class="del-btn" data-remove-agent-piece="${p.id}" title="Retirer ce fichier">✕</button>
+      <button type="button" class="del-btn" data-remove-piece="${p.id}" title="Retirer ce fichier">✕</button>
     </div>`;
   });
   html += `</div>`;
-  const total = pieces.reduce((s,p)=> s + (p.size||0), 0);
-  html += `<div class="settings-note">${pieces.length} fichier(s) — ${formatFileSize(total)} au total.</div>`;
-  return html;
+  const total = MODAL_PIECES.reduce((s,p)=> s + (p.size||0), 0);
+  html += `<div class="settings-note">${MODAL_PIECES.length} fichier(s) — ${formatFileSize(total)} au total.</div>`;
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-remove-piece]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      MODAL_PIECES = MODAL_PIECES.filter(p=> p.id !== btn.dataset.removePiece);
+      renderAttachList();
+      updateImportTabLabel();
+    });
+  });
 }
 
-function processAgentAttachmentFile(file){
+function processAttachmentFile(file){
   const MAX_RAW = 8*1024*1024; // 8 Mo bruts avant compression
   if(file.size > MAX_RAW){
     alert(`Le fichier "${file.name}" est trop volumineux (max 8 Mo).`);
@@ -1770,34 +1415,24 @@ function processAgentAttachmentFile(file){
   }
   if(file.type.startsWith('image/')){
     compressImageFile(file, (dataUrl, size)=>{
-      AGENT_MODAL_PIECES.push({ id: uid(), name: file.name, mime:'image/jpeg', size, dataUrl });
-      renderAgentAttachListInModal();
+      MODAL_PIECES.push({ id: uid(), name: file.name, mime:'image/jpeg', size, dataUrl });
+      renderAttachList();
+      updateImportTabLabel();
     });
   } else if(file.type === 'application/pdf'){
     const proceed = file.size <= 4*1024*1024 || window.confirm(`Le PDF "${file.name}" fait ${formatFileSize(file.size)}. Les documents volumineux ralentissent l'enregistrement et la synchronisation. Continuer quand même ?`);
     if(!proceed) return;
     const reader = new FileReader();
     reader.onload = (e)=>{
-      AGENT_MODAL_PIECES.push({ id: uid(), name: file.name, mime:'application/pdf', size: file.size, dataUrl: e.target.result });
-      renderAgentAttachListInModal();
+      MODAL_PIECES.push({ id: uid(), name: file.name, mime:'application/pdf', size: file.size, dataUrl: e.target.result });
+      renderAttachList();
+      updateImportTabLabel();
     };
     reader.onerror = ()=> alert(`Impossible de lire le fichier "${file.name}".`);
     reader.readAsDataURL(file);
   } else {
     alert(`Type de fichier non pris en charge : "${file.name}". Seuls les images (JPG, PNG…) et les PDF sont acceptés.`);
   }
-}
-
-function renderAgentAttachListInModal(){
-  const wrap = document.getElementById('agent-attach-list');
-  if(!wrap) return;
-  wrap.innerHTML = renderAgentAttachList(AGENT_MODAL_PIECES);
-  wrap.querySelectorAll('[data-remove-agent-piece]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      AGENT_MODAL_PIECES = AGENT_MODAL_PIECES.filter(p=>p.id!==btn.dataset.removeAgentPiece);
-      renderAgentAttachListInModal();
-    });
-  });
 }
 
 function compressImageFile(file, callback){
@@ -1825,112 +1460,177 @@ function compressImageFile(file, callback){
   reader.readAsDataURL(file);
 }
 
+function renderSpecificFields(type, f){
+  const cfg = FICHE_TYPES[type];
+  const specData = (f && f.specific) || {};
+  let html = `<div style="border-top:1px dashed var(--line); padding-top:12px; margin-top:2px; display:flex; flex-direction:column; gap:14px;">`;
 
+  if(type === 'ADA'){
+    // Identification de l'agent d'abord, puis la grille de critères, puis la décision en dernier.
+    cfg.fields.filter(fld=> fld.key!=='decision').forEach(fld=>{ html += renderFieldHTML(fld, specData); });
+    html += renderAdaptationGrid(specData);
+    const decisionFld = cfg.fields.find(fld=> fld.key==='decision');
+    if(decisionFld) html += renderFieldHTML(decisionFld, specData);
+  } else {
+    cfg.fields.forEach(fld=>{ html += renderFieldHTML(fld, specData); });
+  }
 
-function wrapView(inner){ return inner; }
-
-function render(){
-  if(ACTIVE_VIEW==='overview') renderOverview();
-  else if(ACTIVE_VIEW==='maintenance') renderMaintenance();
-  else if(ACTIVE_VIEW==='effectifs') renderEffectifs();
-  else if(ACTIVE_VIEW==='admin') renderAdmin();
-  bindDynamicEvents();
+  html += `</div>`;
+  document.getElementById('f-specific-fields').innerHTML = html;
+  if(type === 'ADA') bindAdaptationGridEvents();
 }
 
-function switchView(view){
-  ACTIVE_VIEW = view;
-  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.view===view));
+function renderFieldHTML(fld, specData){
+  const val = esc(specData[fld.key]||'');
+  let html = `<div class="field-full"><label>${esc(fld.label)}</label>`;
+  if(fld.type==='select'){
+    html += `<select data-spec="${fld.key}">`;
+    fld.options.forEach(o=> html += `<option value="${esc(o)}" ${specData[fld.key]===o?'selected':''}>${esc(o)}</option>`);
+    html += `</select>`;
+  } else if(fld.type==='textarea'){
+    html += `<textarea data-spec="${fld.key}">${val}</textarea>`;
+  } else {
+    html += `<input type="${fld.type}" data-spec="${fld.key}" value="${val}" ${fld.ph?`placeholder="${esc(fld.ph)}"`:''}>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+/* ---------- Grille d'adaptation : rendu + calcul du score ---------- */
+function renderAdaptationGrid(specData){
+  let html = `<div class="adapt-grid-wrap">
+    <label style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft); display:block; margin-bottom:8px;">Grille de critères d'évaluation</label>
+    <table class="adapt-grid"><thead><tr><th>Critère</th><th>Niveau atteint</th></tr></thead><tbody>`;
+  CRITERES_ADAPTATION.forEach(c=>{
+    const cur = specData[c.key] || '';
+    html += `<tr><td>${esc(c.label)}</td><td><select data-spec="${c.key}" class="adapt-crit-select"><option value="">—</option>`;
+    NIVEAUX_ADAPTATION.forEach(n=> html += `<option value="${n.val}" ${cur===n.val?'selected':''}>${esc(n.label)}</option>`);
+    html += `</select></td></tr>`;
+  });
+  html += `</tbody></table>
+    <div class="adapt-score-line"><span>Score global (calculé)</span><span id="adapt-score-value" class="mono">—</span></div>
+  </div>`;
+  return html;
+}
+
+function adaptationScoreLabel(avg){
+  if(avg >= 3.5) return 'Maîtrisé';
+  if(avg >= 2.5) return 'Satisfaisant';
+  if(avg >= 1.5) return 'À contrôler';
+  return 'Insuffisant';
+}
+
+function computeAdaptationScore(){
+  const selects = document.querySelectorAll('.adapt-crit-select');
+  const scoreEl = document.getElementById('adapt-score-value');
+  let sum = 0, count = 0;
+  selects.forEach(s=>{ if(s.value){ sum += Number(s.value); count++; } });
+  if(!scoreEl) return null;
+  if(count === 0){ scoreEl.textContent = '—'; return null; }
+  const avg = sum / count;
+  const label = adaptationScoreLabel(avg);
+  scoreEl.textContent = `${avg.toFixed(1)}/4 — ${label} (${count}/${CRITERES_ADAPTATION.length} critères renseignés)`;
+  return { avg: avg.toFixed(1), label };
+}
+
+function bindAdaptationGridEvents(){
+  document.querySelectorAll('.adapt-crit-select').forEach(s=> s.addEventListener('change', computeAdaptationScore));
+  computeAdaptationScore();
+}
+
+function closeFicheModal(){
+  document.getElementById('modal-bg').classList.remove('open');
+  editingFicheId = null;
+  MODAL_PIECES = [];
+}
+
+function saveFicheFromModal(){
+  const type = document.getElementById('f-type').value;
+  const dateVal = document.getElementById('f-date').value;
+  const echeanceVal = document.getElementById('f-echeance').value;
+
+  if(!isValidISODate(dateVal)){
+    alert("La date saisie n'est pas valide. Merci de la corriger avant d'enregistrer.");
+    return;
+  }
+  if(!isValidISODate(echeanceVal)){
+    alert("La date d'échéance saisie n'est pas valide. Merci de la corriger avant d'enregistrer.");
+    return;
+  }
+
+  const specific = {};
+  document.querySelectorAll('#f-specific-fields [data-spec]').forEach(el=>{
+    specific[el.dataset.spec] = el.value;
+  });
+  if(type === 'ADA'){
+    const computed = computeAdaptationScore();
+    specific.score = computed ? `${computed.avg}/4 — ${computed.label}` : '';
+  }
+  const payload = {
+    type,
+    titre: document.getElementById('f-titre').value.trim(),
+    date: dateVal,
+    responsable: document.getElementById('f-responsable').value.trim(),
+    statut: document.getElementById('f-statut').value,
+    echeance: echeanceVal,
+    notes: document.getElementById('f-notes').value.trim(),
+    specific,
+    pieces: typeSupportsImport(type) ? MODAL_PIECES : []
+  };
+
+  if(editingFicheId){
+    const f = DATA.fiches.find(x=>x.id===editingFicheId);
+    if(f && f.valide){
+      alert(`Cette fiche a été validée le ${fmtDate(f.valideLe)} : elle est définitive et ne peut plus être modifiée.`);
+      closeFicheModal();
+      render();
+      return;
+    }
+    Object.assign(f, payload);
+  } else {
+    payload.id = uid();
+    payload.ref = nextRef(type);
+    payload.valide = false;
+    payload.valideLe = null;
+    DATA.fiches.push(payload);
+  }
+  saveData();
+  closeFicheModal();
   render();
 }
 
 /* ============================================================
-   Modal — Agent editor
+   Validation — verrouillage définitif d'une fiche
+   Une fois validée, une fiche ne peut plus être modifiée ni supprimée,
+   par personne (y compris l'administrateur) : c'est un acte volontaire
+   et irréversible, protégé par le code administrateur.
    ============================================================ */
-function openAgentModal(agentId){
-  editingAgentId = agentId || null;
-  const a = agentId ? DATA.effectifs.agents.find(x=>x.id===agentId) : null;
-  AGENT_MODAL_PIECES = (a && Array.isArray(a.pieces)) ? a.pieces.map(p=> Object.assign({}, p)) : [];
-  document.getElementById('agent-modal-title').textContent = a ? `Modifier — ${a.prenoms} ${a.nom}` : 'Nouvel élément';
-
-  let body = '';
-  AGENT_FIELDS.forEach(f=>{
-    if(f.type === 'select'){
-      const cur = a ? (a[f.key]||'') : '';
-      body += `<div class="field-full"><label>${esc(f.label)}</label><select data-agent-field="${f.key}">`;
-      f.options.forEach(o=> body += `<option value="${esc(o)}" ${cur===o?'selected':''}>${esc(o)}</option>`);
-      body += `</select></div>`;
-    } else {
-      const val = esc(a ? (a[f.key]||'') : '');
-      body += `<div class="field-full"><label>${esc(f.label)}</label><input type="text" data-agent-field="${f.key}" value="${val}"></div>`;
+function validateFiche(id){
+  requireAdminAccess(async ()=>{
+    const f = DATA.fiches.find(x=>x.id===id);
+    if(!f || f.valide) return;
+    const ok = window.confirm(
+      `Valider la fiche ${f.ref} ?\n\nUne fois validée, elle deviendra définitive : plus personne — y compris un administrateur — ne pourra la modifier ou la supprimer.\n\nConfirmer la validation ?`
+    );
+    if(!ok) return;
+    try{
+      const { ok: httpOk, data } = await backendFetch('/api/instruction/validate', { method:'POST', auth:true, body:{ id } });
+      if(httpOk && data && data.ok){
+        DATA.fiches = data.fiches || DATA.fiches;
+        renderInstruction();
+        bindDynamicEvents();
+      } else {
+        alert((data && data.error) || 'Échec de la validation.');
+      }
+    }catch(e){
+      alert('Backend injoignable.');
     }
   });
-  body += `<div class="field-full">
-    <label>Parrainage</label>
-    <label class="check-row"><input type="checkbox" id="agent-field-parrain" ${a && a.parrain ? 'checked' : ''}> Parrain</label>
-    <label class="check-row"><input type="checkbox" id="agent-field-parraine" ${a && a.parraine ? 'checked' : ''}> Parrainé</label>
-  </div>`;
-  body += `<div class="field-full">
-    <label>Photo / document scanné</label>
-    <div class="settings-note" style="margin-bottom:6px;">Ex. photo d'identité, pièce d'identité ou document scanné concernant cet élément. Formats acceptés : images (JPG, PNG…) et PDF.</div>
-    <label class="btn ghost" for="agent-attach-input" style="align-self:flex-start;">+ Ajouter photo / document</label>
-    <input type="file" id="agent-attach-input" accept="image/*,application/pdf" multiple style="display:none;">
-    <div id="agent-attach-list" style="margin-top:10px;"></div>
-  </div>`;
-  document.getElementById('agent-modal-body').innerHTML = body;
-  renderAgentAttachListInModal();
-  document.getElementById('agent-attach-input').addEventListener('change', (e)=>{
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    files.forEach(file=> processAgentAttachmentFile(file));
-  });
-  document.getElementById('agent-modal-bg').classList.add('open');
-}
-function closeAgentModal(){
-  document.getElementById('agent-modal-bg').classList.remove('open');
-  editingAgentId = null;
-  AGENT_MODAL_PIECES = [];
-}
-function saveAgentFromModal(){
-  const payload = {};
-  document.querySelectorAll('#agent-modal-body [data-agent-field]').forEach(el=>{
-    payload[el.dataset.agentField] = el.value.trim();
-  });
-  const parrainEl = document.getElementById('agent-field-parrain');
-  const parraineEl = document.getElementById('agent-field-parraine');
-  payload.parrain = !!(parrainEl && parrainEl.checked);
-  payload.parraine = !!(parraineEl && parraineEl.checked);
-  payload.pieces = AGENT_MODAL_PIECES;
-  if(editingAgentId){
-    const a = DATA.effectifs.agents.find(x=>x.id===editingAgentId);
-    Object.assign(a, payload);
-  } else {
-    payload.id = uid();
-    DATA.effectifs.agents.push(payload);
-  }
-  saveData();
-  closeAgentModal();
-  render();
 }
 
 /* ============================================================
    Dynamic event binding (re-bound after every render)
    ============================================================ */
-/* Ramène une valeur numérique à la borne min/max définie pour ce champ (si
-   elle en a une), directement sur l'élément — appelée à chaque frappe et à
-   chaque changement, pour qu'une valeur hors bornes ne soit jamais enregistrée,
-   même transitoirement. */
-function clampEntryFieldIfNeeded(el, rub, field){
-  if(el.type !== 'number' || el.value === '') return;
-  const cfg = RUBRIQUES.find(r=>r.key===rub);
-  const colCfg = cfg && cfg.entryCols.find(c=>c.key===field);
-  if(!colCfg) return;
-  let num = Number(el.value);
-  if(isNaN(num)) return;
-  if(colCfg.min !== undefined && num < colCfg.min) num = colCfg.min;
-  if(colCfg.max !== undefined && num > colCfg.max) num = colCfg.max;
-  if(num !== Number(el.value)) el.value = num;
-}
-
 function bindDynamicEvents(){
   // Administrateur : déverrouiller / copier / rafraîchir l'aperçu de la charge utile
   const adminUnlockBtn = document.getElementById('btn-admin-unlock');
@@ -1950,124 +1650,32 @@ function bindDynamicEvents(){
   if(adminRefreshBtn) adminRefreshBtn.addEventListener('click', ()=> render());
   bindAdminManagementEvents();
 
-  // Rubrique accordion
-  document.querySelectorAll('[data-toggle-rub]').forEach(el=>{
+  // Instruction: filter, new, edit, delete
+  const filterEl = document.getElementById('fiche-filter');
+  if(filterEl) filterEl.addEventListener('change', ()=>{ FICHE_FILTER = filterEl.value; renderInstruction(); bindDynamicEvents(); });
+  const newBtn = document.getElementById('btn-new-fiche');
+  if(newBtn) newBtn.addEventListener('click', ()=> openFicheModal(null));
+  document.querySelectorAll('[data-edit-fiche]').forEach(el=>{
+    el.addEventListener('click', ()=> openFicheModal(el.dataset.editFiche));
+  });
+  document.querySelectorAll('[data-del-fiche]').forEach(el=>{
     el.addEventListener('click', ()=>{
-      const key = el.dataset.toggleRub;
-      OPEN_RUB = (OPEN_RUB === key) ? null : key;
-      render();
-    });
-  });
-
-  // Responsable / suppléant fields
-  document.querySelectorAll('[data-resp]').forEach(el=>{
-    el.addEventListener('input', ()=>{
-      DATA.maintenance[el.dataset.resp][el.dataset.field] = el.value;
+      const f = DATA.fiches.find(x=>x.id===el.dataset.delFiche);
+      if(f && f.valide){
+        alert(`Cette fiche a été validée le ${fmtDate(f.valideLe)} : elle est définitive et ne peut plus être supprimée.`);
+        return;
+      }
+      DATA.fiches = DATA.fiches.filter(f=>f.id!==el.dataset.delFiche);
       saveData();
+      renderInstruction(); bindDynamicEvents();
     });
   });
-  // Extra fields (per-rubrique special data)
-  document.querySelectorAll('[data-extra]').forEach(el=>{
-    el.addEventListener('input', ()=>{
-      DATA.maintenance[el.dataset.extra].extra[el.dataset.field] = el.value;
-      saveData();
-      refreshBadgesSoft();
-    });
-  });
-  // Entry table fields
-  document.querySelectorAll('[data-entry]').forEach(el=>{
-    el.addEventListener('input', ()=>{
-      const rub = el.dataset.entry, id = el.dataset.eid, field = el.dataset.field;
-      const entry = DATA.maintenance[rub].entries.find(e=>e.id===id);
-      if(!entry) return;
-      clampEntryFieldIfNeeded(el, rub, field);
-      entry[field] = el.value; saveData();
-    });
-    el.addEventListener('change', ()=>{
-      const rub = el.dataset.entry, id = el.dataset.eid, field = el.dataset.field;
-      const entry = DATA.maintenance[rub].entries.find(e=>e.id===id);
-      if(!entry) return;
-      clampEntryFieldIfNeeded(el, rub, field);
-      entry[field] = el.value; saveData(); render();
-    });
-  });
-  // Add / delete entry rows
-  document.querySelectorAll('[data-add-entry]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const rub = el.dataset.addEntry;
-      const cfg = RUBRIQUES.find(r=>r.key===rub);
-      const newEntry = {id:uid()};
-      cfg.entryCols.forEach(c=> newEntry[c.key] = c.type==='date' ? todayISO() : '');
-      DATA.maintenance[rub].entries.push(newEntry);
-      OPEN_RUB = rub;
-      saveData();
-      render();
-    });
-  });
-  document.querySelectorAll('[data-del-entry]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const rub = el.dataset.delEntry, id = el.dataset.eid;
-      DATA.maintenance[rub].entries = DATA.maintenance[rub].entries.filter(e=>e.id!==id);
-      OPEN_RUB = rub;
-      saveData();
-      render();
-    });
-  });
-
-  // Effectifs: sub-tabs
-  document.querySelectorAll('[data-eff-subview]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      EFFECTIFS_SUBVIEW = el.dataset.effSubview;
-      renderEffectifs(); bindDynamicEvents();
-    });
-  });
-  // Effectifs: date picker
-  const effDateEl = document.getElementById('eff-date-picker');
-  if(effDateEl) effDateEl.addEventListener('change', ()=>{
-    if(isValidISODate(effDateEl.value) && effDateEl.value){
-      EFFECTIFS_DATE = effDateEl.value;
-      renderEffectifs(); bindDynamicEvents();
-    }
-  });
-  // Effectifs: situation row fields
-  document.querySelectorAll('[data-eff-row]').forEach(el=>{
-    const update = ()=>{
-      // Recherche directe et légère : la situation du jour existe déjà (créée au
-      // rendu de la vue), pas besoin de relancer toute la réconciliation des
-      // lignes à chaque frappe — ça évite le ralentissement en tapant vite.
-      const s = DATA.effectifs.situations.find(x=>x.date===EFFECTIFS_DATE);
-      const row = s && s.rows.find(r=>r.id===el.dataset.effRow);
-      if(row){ row[el.dataset.field] = el.value; saveData(); }
-    };
-    el.addEventListener('input', update);
-    el.addEventListener('change', ()=>{ update(); renderEffectifs(); bindDynamicEvents(); });
-  });
-  // Effectifs: agents roster
-  const newAgentBtn = document.getElementById('btn-new-agent');
-  if(newAgentBtn) newAgentBtn.addEventListener('click', ()=> openAgentModal(null));
-  document.querySelectorAll('[data-edit-agent]').forEach(el=>{
-    el.addEventListener('click', ()=> openAgentModal(el.dataset.editAgent));
-  });
-  document.querySelectorAll('[data-del-agent]').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      if(!confirm('Supprimer cet élément ? Ses lignes dans les situations journalières seront aussi retirées.')) return;
-      DATA.effectifs.agents = DATA.effectifs.agents.filter(a=>a.id!==el.dataset.delAgent);
-      DATA.effectifs.situations.forEach(s=>{ s.rows = s.rows.filter(r=>r.agentId!==el.dataset.delAgent); });
-      saveData();
-      renderEffectifs(); bindDynamicEvents();
-    });
+  document.querySelectorAll('[data-validate-fiche]').forEach(el=>{
+    el.addEventListener('click', ()=> validateFiche(el.dataset.validateFiche));
   });
 }
 
-function refreshBadgesSoft(){
-  document.querySelectorAll('.rub-card').forEach(card=>{
-    const key = card.dataset.rub;
-    const r = RUBRIQUES.find(x=>x.key===key);
-    const st = rubStatus(r);
-    const badge = card.querySelector('.rub-head .badge');
-    if(badge){ badge.className = `badge ${st}`; badge.textContent = st==='alert'?'Alerte':(st==='warn'?'Vigilance':'OK'); }
-  });
-}
+
 
 /* ============================================================
    Init
@@ -2076,7 +1684,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>{
   b.addEventListener('click', ()=> switchView(b.dataset.view));
 });
 
-/* Global input validation — runs in the capture phase so it corrects the
+/* Global date validation — runs in the capture phase so it corrects the
    field BEFORE any other change-handler (data binding, re-render) reads it. */
 document.addEventListener('change', function(e){
   const t = e.target;
@@ -2085,48 +1693,14 @@ document.addEventListener('change', function(e){
       t.value = '';
       t.classList.add('input-error');
       setTimeout(()=> t.classList.remove('input-error'), 1800);
-      return;
-    }
-    // Cohérence début / fin : dans une même ligne (ex. Suivi des permissions),
-    // la date de fin ne peut pas être antérieure à la date de début.
-    if(t.dataset && (t.dataset.field === 'debut' || t.dataset.field === 'fin')){
-      const row = t.closest('tr');
-      if(row){
-        const debutEl = row.querySelector('[data-field="debut"]');
-        const finEl = row.querySelector('[data-field="fin"]');
-        if(debutEl && finEl && debutEl.value && finEl.value && finEl.value < debutEl.value){
-          alert('La date de fin ne peut pas être antérieure à la date de début.');
-          t.value = '';
-          t.classList.add('input-error');
-          setTimeout(()=> t.classList.remove('input-error'), 1800);
-        }
-      }
-    }
-  }
-  // Bornes min/max sur les champs numériques (ex. jours restants à prendre,
-  // plafonnés à 45) : la valeur saisie est automatiquement ramenée dans les
-  // bornes autorisées pour limiter les erreurs de remplissage.
-  if(t && t.tagName === 'INPUT' && t.type === 'number' && t.value !== '' && (t.getAttribute('min')!==null || t.getAttribute('max')!==null)){
-    const v = Number(t.value);
-    if(!isNaN(v)){
-      const min = t.getAttribute('min')!==null ? Number(t.getAttribute('min')) : null;
-      const max = t.getAttribute('max')!==null ? Number(t.getAttribute('max')) : null;
-      let corrected = null;
-      if(min!==null && v<min) corrected = min;
-      if(max!==null && v>max) corrected = max;
-      if(corrected!==null){
-        t.value = corrected;
-        t.classList.add('input-error');
-        setTimeout(()=> t.classList.remove('input-error'), 1800);
-      }
     }
   }
 }, true);
 
-document.getElementById('agent-modal-close').addEventListener('click', closeAgentModal);
-document.getElementById('agent-modal-cancel').addEventListener('click', closeAgentModal);
-document.getElementById('agent-modal-save').addEventListener('click', saveAgentFromModal);
-document.getElementById('agent-modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='agent-modal-bg') closeAgentModal(); });
+document.getElementById('modal-close').addEventListener('click', closeFicheModal);
+document.getElementById('modal-cancel').addEventListener('click', closeFicheModal);
+document.getElementById('modal-save').addEventListener('click', saveFicheFromModal);
+document.getElementById('modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='modal-bg') closeFicheModal(); });
 document.getElementById('btn-export').addEventListener('click', ()=>{
   requireAdminAccess(exportData);
 });
