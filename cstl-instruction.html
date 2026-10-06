@@ -187,7 +187,7 @@
   .resp-row{display:flex; gap:24px; flex-wrap:wrap; margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed var(--line);}
   .field-group{display:flex; flex-direction:column; gap:4px; min-width:180px;}
   .field-group label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
-  input[type=text], input[type=number], input[type=date], select, textarea{
+  input[type=text], input[type=email], input[type=number], input[type=date], select, textarea{
     font-family:'IBM Plex Sans'; font-size:13px; padding:7px 9px;
     border:1px solid var(--line); border-radius:2px; background:var(--navy); color:var(--ink);
   }
@@ -314,9 +314,61 @@
     .motto{display:none;}
     .resp-row{flex-direction:column; gap:12px;}
   }
+  /* ===== Page de connexion ===== */
+  body.logged-out .topbar, body.logged-out #app-root{display:none;}
+  body:not(.logged-out) .login-screen{display:none;}
+  .login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;}
+  .login-card{width:100%; max-width:400px; background:var(--navy-2); border:1px solid var(--line); border-top:3px solid var(--gold); border-radius:4px; box-shadow:var(--shadow); padding:32px 28px 22px; text-align:center;}
+  .login-card .crest{margin:0 auto 16px; width:58px; height:58px;}
+  .login-title{font-size:22px; color:#fff; text-transform:uppercase; letter-spacing:0.04em;}
+  .login-sub{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--sky-light); letter-spacing:0.07em; text-transform:uppercase; margin:6px 0 26px;}
+  .login-form{display:flex; flex-direction:column; gap:8px; text-align:left;}
+  .login-form label{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-soft);}
+  .login-form input{width:100%; padding:11px 12px; font-size:15px;}
+  .login-form input.login-code-input{font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:0.45em; text-align:center; padding:10px 12px;}
+  .login-submit{margin-top:8px; padding:12px 16px; font-size:14px;}
+  .login-submit:disabled{opacity:.6; cursor:wait;}
+  .login-hint{font-size:13px; color:var(--ink-soft); margin-bottom:8px; line-height:1.55;}
+  .login-hint b{color:var(--ink); word-break:break-all;}
+  .login-links{display:flex; justify-content:space-between; gap:10px; margin-top:4px;}
+  .link-btn{background:none; border:none; color:var(--sky-light); font-family:'IBM Plex Sans'; font-size:12.5px; cursor:pointer; padding:4px 0;}
+  .link-btn:hover{text-decoration:underline;}
+  .login-note{font-size:12.5px; margin-top:14px; min-height:1.2em; color:var(--ink-soft);}
+  .login-note.error{color:var(--alert);}
+  .login-foot{font-size:11.5px; color:var(--ink-soft); margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);}
+  .user-chip{font-size:12px; color:var(--ink-soft); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .user-chip b{color:#fff; font-weight:600;}
 </style>
 </head>
 <body>
+
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="crest"></div>
+    <h1 class="login-title">CSTL — Bureau Instruction</h1>
+    <div class="login-sub">Base Ecole de Thiès · Commandement Soutien Technique et Logistique</div>
+
+    <form class="login-form" id="login-form-email" novalidate>
+      <label for="login-email">Adresse email</label>
+      <input type="email" id="login-email" autocomplete="email" placeholder="prenom.nom@exemple.com">
+      <button type="submit" class="btn gold login-submit">Recevoir un code</button>
+    </form>
+
+    <form class="login-form" id="login-form-code" novalidate style="display:none;">
+      <div class="login-hint">Si l'adresse <b id="login-email-shown"></b> a un compte, un code à 6 chiffres vient d'y être envoyé. Il est valable 10 minutes — pense à regarder dans les indésirables.</div>
+      <label for="login-code">Code reçu par email</label>
+      <input type="text" id="login-code" class="login-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+      <button type="submit" class="btn gold login-submit">Se connecter</button>
+      <div class="login-links">
+        <button type="button" class="link-btn" id="login-change-email">← Changer d'adresse</button>
+        <button type="button" class="link-btn" id="login-resend">Renvoyer le code</button>
+      </div>
+    </form>
+
+    <div class="login-note" id="login-note" role="status"></div>
+    <div class="login-foot">Pas encore de compte ? Demande à un administrateur de t'en créer un.</div>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -329,10 +381,11 @@
     </div>
     <div class="topbar-actions">
       <span id="save-indicator" class="save-indicator"><span class="save-dot"></span><span id="save-indicator-text">Chargement…</span></span>
-      <button class="icon-btn-top" id="btn-settings" title="Configurer la connexion au backend">Paramètres</button>
+      <span class="user-chip" id="user-chip"></span>
       <button class="icon-btn-top" id="btn-export" title="Télécharger une sauvegarde des données">Exporter</button>
       <label class="icon-btn-top" id="import-label" for="import-file" title="Charger une sauvegarde JSON">Importer</label>
       <input type="file" id="import-file" accept="application/json" style="display:none;">
+      <button class="icon-btn-top" id="btn-logout">Déconnexion</button>
     </div>
     <div class="motto">Plus Haut<br>En Persévérant</div>
   </div>
@@ -358,70 +411,6 @@
     <div class="modal-foot">
       <button class="btn ghost" id="modal-cancel">Annuler</button>
       <button class="btn gold" id="modal-save">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="settings-modal-bg">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-head">
-      <h3>Paramètres</h3>
-      <button class="modal-close" id="settings-modal-close">&times;</button>
-    </div>
-    <div class="modal-body" style="display:flex; flex-direction:column; gap:14px;">
-
-      <div class="settings-note">Les fiches sont désormais partagées entre tous les appareils via un backend central (Vercel + Supabase) — plus besoin d'exporter/importer pour transférer les données d'un poste à l'autre.</div>
-
-      <div class="field-full">
-        <label>URL du backend</label>
-        <input type="text" id="backend-url-input" placeholder="https://ton-projet.vercel.app">
-      </div>
-      <div class="field-full">
-        <label>Secret d'application</label>
-        <input type="text" id="app-secret-input" placeholder="Le secret défini sur Vercel (APP_SECRET)">
-      </div>
-      <div class="row-actions">
-        <button class="btn ghost" id="btn-save-connection">Enregistrer la connexion</button>
-        <button class="btn ghost" id="btn-test-sync">Tester la connexion</button>
-      </div>
-
-      <div style="border-top:1px dashed var(--line); padding-top:14px; margin-top:4px;">
-        <div class="settings-note" style="margin-bottom:12px;">Connexion — obligatoire pour utiliser le tableau de bord. Les techniciens consultent et saisissent ; les administrateurs valident, exportent, importent et gèrent les techniciens.</div>
-
-        <div id="admin-login-area">
-          <div class="field-full">
-            <label>Adresse email</label>
-            <input type="text" id="admin-email-input" placeholder="ton.email@exemple.com">
-          </div>
-          <div class="row-actions" style="margin-top:8px;">
-            <button class="btn ghost" id="btn-send-admin-code">Recevoir un code</button>
-          </div>
-          <div id="admin-code-section" style="display:none; flex-direction:column; gap:10px; margin-top:12px;">
-            <div class="field-full">
-              <label>Code reçu par email</label>
-              <input type="text" id="admin-code-input" inputmode="numeric" placeholder="123456">
-            </div>
-            <div class="row-actions">
-              <button class="btn gold" id="btn-verify-admin-code">Se connecter</button>
-            </div>
-          </div>
-          <div class="settings-note" id="admin-login-status-note" style="display:none; margin-top:12px;"></div>
-        </div>
-
-        <div id="admin-logged-in-area" style="display:none; flex-direction:column; gap:14px;">
-          <div class="settings-note">✓ Connecté : <span id="admin-logged-in-email" class="mono"></span> — <b id="admin-logged-in-role"></b></div>
-          <button class="btn ghost" id="btn-logout" style="align-self:flex-start;">Se déconnecter</button>
-          <div class="field-full" id="reset-zone">
-            <label>Zone sensible (super-administrateur)</label>
-            <div class="settings-note">Efface définitivement <b>toutes les fiches enregistrées</b> pour tout le monde (y compris déjà validées) et remet les compteurs de référence à zéro. Action irréversible.</div>
-            <button class="btn ghost" id="btn-reset-data" style="align-self:flex-start; border-color:var(--alert); color:var(--alert); margin-top:6px;">Réinitialiser toutes les fiches</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <div class="modal-foot">
-      <button class="btn ghost" id="settings-modal-close-2">Fermer</button>
     </div>
   </div>
 </div>
@@ -520,7 +509,7 @@ const NIVEAUX_ADAPTATION = [
 
 /* ---------- Default data ---------- */
 function defaultData(){
-  return { fiches: [], fichesSeq:{PLA:0,SUI:0,EVA:0,ADA:0,CTD:0,PRES:0}, settings:{backendUrl:'', appSecret:''} };
+  return { fiches: [], fichesSeq:{PLA:0,SUI:0,EVA:0,ADA:0,CTD:0,PRES:0} };
 }
 
 let DATA = null;
@@ -530,12 +519,10 @@ let SESSION_TOKEN = null;
 let SESSION_EXPIRES = 0;
 let SESSION_EMAIL = '';
 let SESSION_ROLE = '';   // 'technicien' | 'admin' | 'superadmin'
-let PENDING_ADMIN_ACTION = null;
 
 /* ---------- Storage abstraction ----------
-   Seules les infos de CONNEXION (URL du backend, secret d'application) sont
-   gardées localement — elles sont nécessaires avant même de pouvoir
-   contacter le backend. Les vraies données (les fiches) ne vivent plus ici :
+   Seule la session de connexion est gardée localement, pour ne pas devoir
+   se reconnecter à chaque visite. Les vraies données (les fiches) ne vivent plus ici :
    elles vivent sur le backend partagé, communes à tous les appareils. */
 const HAS_CLAUDE_STORAGE = (typeof window !== 'undefined' && !!window.storage);
 
@@ -555,19 +542,6 @@ async function storageWrite(key, jsonStr){
   }
   try{ localStorage.setItem(key, jsonStr); return true; }
   catch(e){ console.error('Erreur de sauvegarde locale', e); return false; }
-}
-
-async function loadConnectionSettings(){
-  let conn = { backendUrl:'', appSecret:'' };
-  try{
-    const raw = await storageRead(STORAGE_KEY);
-    if(raw) conn = Object.assign(conn, JSON.parse(raw));
-  }catch(e){ /* pas encore de connexion enregistrée */ }
-  return conn;
-}
-
-async function saveConnectionSettings(){
-  await storageWrite(STORAGE_KEY, JSON.stringify({ backendUrl: DATA.settings.backendUrl, appSecret: DATA.settings.appSecret }));
 }
 
 /* Persistance de la session utilisateur (jeton + expiration + email) —
@@ -595,16 +569,19 @@ async function saveAdminSession(){
   await storageWrite(ADMIN_SESSION_KEY, JSON.stringify({ token: SESSION_TOKEN, expires: SESSION_EXPIRES, email: SESSION_EMAIL, role: SESSION_ROLE }));
 }
 
-/* Appel générique vers le backend Vercel. Ajoute automatiquement le secret
-   d'application et le jeton de session de l'utilisateur connecté. Si le
+/* Adresse du backend. Vide = le même site que cette page : c'est le cas
+   quand les pages sont servies par Vercel avec l'API. À renseigner seulement
+   si la page est ouverte depuis un autre endroit, par exemple
+   'https://mon-projet.vercel.app'. */
+const BACKEND_URL = '';
+
+/* Appel générique vers le backend Vercel. Ajoute automatiquement le jeton
+   de session de l'utilisateur connecté. Si le
    serveur signale une session expirée (code SESSION), renvoie à la connexion. */
 async function backendFetch(path, opts = {}){
-  const base = (DATA.settings && DATA.settings.backendUrl) ? DATA.settings.backendUrl.trim().replace(/\/+$/,'') : '';
-  if(!base) throw new Error("URL du backend non configurée. Ouvre Paramètres pour la renseigner.");
   const headers = { 'Content-Type': 'application/json' };
-  if(DATA.settings && DATA.settings.appSecret) headers['X-App-Secret'] = DATA.settings.appSecret;
   if(SESSION_TOKEN) headers['Authorization'] = 'Bearer ' + SESSION_TOKEN;
-  const res = await fetch(base + path, {
+  const res = await fetch(BACKEND_URL.replace(/\/+$/,'') + path, {
     method: opts.method || 'GET',
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined
@@ -619,15 +596,7 @@ let LAST_SYNCED_FICHES = [];
 
 async function loadData(){
   DATA = defaultData();
-  const conn = await loadConnectionSettings();
-  DATA.settings.backendUrl = conn.backendUrl || '';
-  DATA.settings.appSecret = conn.appSecret || '';
   await loadAdminSession();
-
-  if(!DATA.settings.backendUrl){
-    setSaveIndicator('idle', 'Backend non configuré');
-    return;
-  }
 
   if(!hasValidSession()){
     setSaveIndicator('idle', 'Connexion requise');
@@ -674,7 +643,6 @@ let saveTimer = null;
 function saveData(){
   setSaveIndicator('saving', 'Enregistrement…');
   clearTimeout(saveTimer);
-  if(!DATA.settings.backendUrl){ setSaveIndicator('error', 'Backend non configuré'); return; }
   saveTimer = setTimeout(async ()=>{
     try{
       // Une fiche presente dans le dernier etat recu du serveur mais absente
@@ -708,7 +676,7 @@ let autoRefreshTimer = null;
 function startAutoRefresh(){
   clearInterval(autoRefreshTimer);
   autoRefreshTimer = setInterval(async ()=>{
-    if(!DATA || !DATA.settings.backendUrl || !hasValidSession()) return;
+    if(!DATA || !hasValidSession()) return;
     if(document.querySelector('.modal-bg.open')) return;
     try{
       const { ok, data } = await backendFetch('/api/instruction/state', { method:'GET' });
@@ -769,25 +737,8 @@ async function importDataFromFile(file){
       alert((data && data.error) || "Échec de l'import.");
     }
   }catch(e){
-    alert('Backend injoignable — vérifie la connexion dans Paramètres.');
+    alert('Backend injoignable — vérifie ta connexion internet.');
   }
-}
-
-function openSettingsModal(){
-  document.getElementById('backend-url-input').value = (DATA.settings && DATA.settings.backendUrl) || '';
-  document.getElementById('app-secret-input').value = (DATA.settings && DATA.settings.appSecret) || '';
-  document.getElementById('admin-email-input').value = '';
-  document.getElementById('admin-code-input').value = '';
-  document.getElementById('admin-code-section').style.display = 'none';
-  const note = document.getElementById('admin-login-status-note');
-  note.style.display = 'none'; note.textContent = '';
-  renderAdminLoginState();
-  document.getElementById('settings-modal-bg').classList.add('open');
-}
-function closeSettingsModal(){
-  document.getElementById('settings-modal-bg').classList.remove('open');
-  // Fermer sans se connecter annule toute action qui attendait la connexion.
-  PENDING_ADMIN_ACTION = null;
 }
 
 function hasValidSession(){
@@ -814,56 +765,71 @@ async function endSession(){
    un compte retiré : on revient à l'écran de connexion. */
 async function onSessionLost(message){
   await endSession();
+  setLoginStep('email');
+  showLoginNote(message || 'Session expirée. Reconnecte-toi.', true);
   render();
-  alert((message || 'Session expirée.') + '\nReconnecte-toi depuis Paramètres.');
 }
 
 function logout(){
-  endSession().then(()=>{ closeSettingsModal(); render(); });
+  endSession().then(()=>{ setLoginStep('email'); render(); });
 }
 
-function renderAdminLoginState(){
-  const loginArea = document.getElementById('admin-login-area');
-  const loggedInArea = document.getElementById('admin-logged-in-area');
-  if(hasValidSession()){
-    loginArea.style.display = 'none';
-    loggedInArea.style.display = 'flex';
-    document.getElementById('admin-logged-in-email').textContent = SESSION_EMAIL || '—';
-    document.getElementById('admin-logged-in-role').textContent = ROLE_LABELS[SESSION_ROLE] || '—';
-    document.getElementById('reset-zone').style.display = hasRole('superadmin') ? '' : 'none';
-  } else {
-    loginArea.style.display = 'block';
-    loggedInArea.style.display = 'none';
-  }
+/* ---------- Page de connexion ----------
+   Deux étapes, comme sur les sites sans mot de passe : l'adresse email,
+   puis le code à 6 chiffres reçu par email. */
+function setLoginStep(step){
+  const isCode = step === 'code';
+  document.getElementById('login-form-email').style.display = isCode ? 'none' : '';
+  document.getElementById('login-form-code').style.display = isCode ? '' : 'none';
+  if(isCode) document.getElementById('login-code').value = '';
+  showLoginNote('');
+  focusLoginField();
 }
 
-async function sendAdminLoginCode(){
-  const email = document.getElementById('admin-email-input').value.trim();
-  const note = document.getElementById('admin-login-status-note');
-  if(!DATA.settings.backendUrl){ alert("Renseigne d'abord l'URL du backend, puis clique « Enregistrer la connexion »."); return; }
-  if(!email){ alert('Indique ton adresse email.'); return; }
-  note.style.display = 'block';
-  note.textContent = 'Envoi en cours…';
+function focusLoginField(){
+  const onCodeStep = document.getElementById('login-form-code').style.display !== 'none';
+  const el = document.getElementById(onCodeStep ? 'login-code' : 'login-email');
+  setTimeout(()=> el.focus(), 0);
+}
+
+function showLoginNote(text, isError){
+  const note = document.getElementById('login-note');
+  note.textContent = text || '';
+  note.classList.toggle('error', !!isError);
+}
+
+function setLoginBusy(formId, busy){
+  document.querySelector(`#${formId} .login-submit`).disabled = busy;
+}
+
+async function sendLoginCode(){
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showLoginNote('Saisis une adresse email valide.', true); return; }
+  const isResend = document.getElementById('login-form-code').style.display !== 'none';
+  setLoginBusy('login-form-email', true);
+  showLoginNote('Envoi du code…');
   try{
     const { ok, data } = await backendFetch('/api/admin/request-code', { method:'POST', body:{ email } });
     if(ok){
-      note.textContent = "Si cette adresse est autorisée, un code vient d'être envoyé (vérifie aussi les indésirables). Valable 10 minutes.";
-      document.getElementById('admin-code-section').style.display = 'flex';
+      document.getElementById('login-email-shown').textContent = email;
+      setLoginStep('code');
+      // Le serveur n'envoie pas plus d'un code par minute et par adresse.
+      if(isResend) showLoginNote("Si ta dernière demande date de plus d'une minute, un nouveau code vient d'être envoyé.");
     } else {
-      note.textContent = (data && data.error) || "Échec de l'envoi.";
+      showLoginNote((data && data.error) || "Échec de l'envoi du code.", true);
     }
   }catch(e){
-    note.textContent = "Échec de l'envoi. Vérifie l'URL du backend et le secret d'application ci-dessus.";
+    showLoginNote('Serveur injoignable. Vérifie ta connexion internet.', true);
   }
+  setLoginBusy('login-form-email', false);
 }
 
-async function verifyAdminLoginCode(){
-  const email = document.getElementById('admin-email-input').value.trim();
-  const code = document.getElementById('admin-code-input').value.trim();
-  const note = document.getElementById('admin-login-status-note');
-  if(!code){ alert('Saisis le code reçu par email.'); return; }
-  note.style.display = 'block';
-  note.textContent = 'Vérification…';
+async function verifyLoginCode(){
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const code = document.getElementById('login-code').value.trim();
+  if(!/^\d{6}$/.test(code)){ showLoginNote('Le code contient 6 chiffres.', true); return; }
+  setLoginBusy('login-form-code', true);
+  showLoginNote('Vérification…');
   try{
     const { ok, data } = await backendFetch('/api/admin/verify-code', { method:'POST', body:{ email, code } });
     if(ok && data && data.ok && data.token){
@@ -873,43 +839,37 @@ async function verifyAdminLoginCode(){
       SESSION_ROLE = data.role || '';
       USER_LIST = null; // recharger la liste pour ce nouveau compte
       await saveAdminSession();
-      renderAdminLoginState();
+      setLoginStep('email');
       await loadData();
       render();
-      const pending = PENDING_ADMIN_ACTION; PENDING_ADMIN_ACTION = null;
-      if(pending) pending();
     } else {
-      note.textContent = (data && data.error) || 'Code invalide ou expiré.';
+      showLoginNote((data && data.error) || 'Code invalide ou expiré.', true);
     }
   }catch(e){
-    note.textContent = "Échec de la vérification. Vérifie ta connexion.";
+    showLoginNote('Serveur injoignable. Vérifie ta connexion internet.', true);
   }
+  setLoginBusy('login-form-code', false);
 }
 
-/* Utilisé par toute action réservée à l'administrateur (valider, réinitialiser,
-   exporter, importer). Si une session valide existe déjà, exécute directement
-   la fonction fournie ; sinon, ouvre les réglages pour se connecter, puis
-   exécute automatiquement l'action une fois la connexion réussie. */
-function requireRole(minRole, afterLoginFn){
-  if(hasRole(minRole)){ afterLoginFn(); return; }
-  if(hasValidSession()){
-    alert(`Action réservée aux comptes ${ROLE_LABELS[minRole]}${minRole === 'superadmin' ? '' : ' (ou plus)'}.`);
-    return;
-  }
-  if(!DATA.settings.backendUrl){
-    alert("Renseigne d'abord la connexion au backend dans Paramètres avant de te connecter.");
-    openSettingsModal();
-    return;
-  }
-  // Après connexion, on revérifie le rôle avant d'exécuter l'action.
-  PENDING_ADMIN_ACTION = ()=> requireRole(minRole, afterLoginFn);
-  alert("Connexion requise — renseigne ton email pour recevoir un code.");
-  openSettingsModal();
+/* Utilisé par toute action réservée à un rôle (valider, réinitialiser,
+   exporter, importer…). Le serveur vérifie de toute façon le rôle : ceci
+   évite seulement d'envoyer une requête vouée à l'échec. */
+function requireRole(minRole, fn){
+  if(hasRole(minRole)){ fn(); return; }
+  if(!hasValidSession()){ render(); return; } // session expirée : retour à la page de connexion
+  alert(`Action réservée aux comptes ${ROLE_LABELS[minRole]}${minRole === 'superadmin' ? '' : ' (ou plus)'}.`);
 }
 
 /* Réinitialisation complète des fiches, pour tout le monde (le backend est
    la source de vérité partagée). Action irréversible, réservée à
    l'administrateur connecté. */
+function renderResetZone(){
+  return `<h3 style="font-family:'Big Shoulders Display'; text-transform:uppercase; color:var(--alert); margin:24px 0 10px;">Zone sensible</h3>
+  <div class="settings-note" style="border-color:var(--alert);">Efface définitivement <b>toutes les fiches enregistrées</b> pour tout le monde (y compris déjà validées) et remet les compteurs de référence à zéro. Action irréversible.
+    <div style="margin-top:10px;"><button class="btn ghost" id="btn-reset-data" style="border-color:var(--alert); color:var(--alert);">Réinitialiser toutes les fiches</button></div>
+  </div>`;
+}
+
 function resetAllData(){
   requireRole('superadmin', async ()=>{
     const ok = window.confirm("Cette action supprime définitivement TOUTES les fiches enregistrées pour tout le monde (y compris les fiches déjà validées) et remet les compteurs de référence à zéro.\n\nContinuer ?");
@@ -920,7 +880,6 @@ function resetAllData(){
       const { ok: httpOk, data } = await backendFetch('/api/instruction/reset', { method:'POST' });
       if(httpOk && data && data.ok){
         DATA.fiches = [];
-        closeSettingsModal();
         render();
         alert('Toutes les fiches ont été supprimées. Le tableau de bord repart de zéro.');
       } else {
@@ -930,39 +889,6 @@ function resetAllData(){
       alert('Backend injoignable.');
     }
   });
-}
-
-async function saveConnectionFromSettings(){
-  const url = document.getElementById('backend-url-input').value.trim().replace(/\/+$/,'');
-  const secret = document.getElementById('app-secret-input').value.trim();
-  DATA.settings.backendUrl = url;
-  DATA.settings.appSecret = secret;
-  await saveConnectionSettings();
-  alert('Connexion enregistrée.');
-  // Si aucune fiche n'a encore été chargée (première configuration), on
-  // recharge maintenant que l'URL est connue.
-  if(!DATA.fiches.length) loadData().then(()=>{ render(); });
-}
-
-async function testBackendConnection(){
-  const url = document.getElementById('backend-url-input').value.trim().replace(/\/+$/,'');
-  const secret = document.getElementById('app-secret-input').value.trim();
-  if(!url){ alert("Renseigne l'URL du backend avant de tester."); return; }
-  const prevUrl = DATA.settings.backendUrl, prevSecret = DATA.settings.appSecret;
-  DATA.settings.backendUrl = url;
-  DATA.settings.appSecret = secret;
-  try{
-    const { ok, data, status } = await backendFetch('/api/instruction/state', { method:'GET' });
-    if(ok && data && data.ok){
-      alert(`Connexion réussie ! ${data.fiches ? data.fiches.length : 0} fiche(s) actuellement sur le backend.`);
-    } else {
-      alert(`Échec (code ${status}). ${data && data.error ? data.error : "Vérifie l'URL et le secret d'application."}`);
-    }
-  }catch(e){
-    alert("La requête n'a pas pu être envoyée. Vérifie l'URL du backend et ta connexion.");
-  }finally{
-    DATA.settings.backendUrl = prevUrl; DATA.settings.appSecret = prevSecret;
-  }
 }
 
 /* ============================================================
@@ -1040,9 +966,6 @@ function ficheStatusClass(f){
 function buildAdminSnapshot(){
   // Copie profonde de l'état réel de l'appli à l'instant présent.
   const clone = JSON.parse(JSON.stringify(DATA));
-  if(clone.settings){
-    if(clone.settings.appSecret) clone.settings.appSecret = '••••••••';
-  }
   // Les pièces jointes (photos/PDF) sont résumées plutôt qu'affichées en
   // entier : leur contenu brut (base64) rendrait l'aperçu illisible.
   (clone.fiches || []).forEach(f=>{
@@ -1143,7 +1066,7 @@ async function loadUserList(){
     const { status, data } = await backendFetch('/api/admin/users', { method:'GET' });
     applyUserListResponse(status, data);
   }catch(e){
-    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie ta connexion internet.';
     if(USER_LIST === null) USER_LIST = [];
   }
   USER_LIST_LOADING = false;
@@ -1164,7 +1087,7 @@ async function userManageAction(action, email, role){
       }
     }
   }catch(e){
-    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie ta connexion internet.';
   }
   render();
 }
@@ -1234,7 +1157,7 @@ async function importUsersCsv(file){
       USER_MANAGE_NOTE = '⚠ ' + ((data && data.error) || "Échec de l'import.");
     }
   }catch(e){
-    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie la connexion dans Paramètres.';
+    USER_MANAGE_NOTE = '⚠ Backend injoignable — vérifie ta connexion internet.';
   }
   render();
 }
@@ -1324,12 +1247,13 @@ function renderAdmin(){
 
   html += renderUserManagement();
   if(USER_LIST === null) setTimeout(loadUserList, 0);
+  if(hasRole('superadmin')) html += renderResetZone();
 
   html += renderAdminReadable(snapshot);
 
   html += `<details class="responsibilities" style="margin-top:20px;">
     <summary>Version technique (JSON) — pour export ou copie</summary>
-    <div class="settings-note" style="margin:10px 0;">Le secret d'application est masqué ci-dessous par sécurité (visible dans Paramètres si besoin) ; les photos/PDF joints sont résumés (nom, taille) plutôt qu'affichés en entier.</div>
+    <div class="settings-note" style="margin:10px 0;">Les photos/PDF joints sont résumés (nom, taille) plutôt qu'affichés en entier.</div>
     <pre class="code-block" id="admin-payload-json" style="max-height:520px;">${esc(JSON.stringify(snapshot, null, 2))}</pre>
     <div class="row-actions" style="margin-top:8px;">
       <button class="btn ghost" id="btn-admin-copy">Copier le JSON</button>
@@ -1429,16 +1353,6 @@ function wrapView(inner){ return inner; }
 /* ============================================================
    Main render dispatcher
    ============================================================ */
-/* Écran affiché à la place du tableau de bord tant que personne n'est
-   connecté : les données ne sont accessibles qu'aux comptes enregistrés. */
-function renderLoginRequired(){
-  const html = `<div class="empty-state">🔒 Connecte-toi pour accéder au tableau de bord.
-    <div class="settings-note" style="margin-top:8px;">Pas encore de compte ? Demande à un administrateur de t'en créer un.</div>
-    <div style="margin-top:14px;"><button class="btn gold" id="btn-admin-unlock">Se connecter</button></div>
-  </div>`;
-  document.getElementById('app-root').innerHTML = wrapView(html);
-}
-
 /* Masque ce que le rôle connecté ne peut pas utiliser (onglet
    Administrateur, export, import). */
 function updateRoleUI(){
@@ -1457,7 +1371,11 @@ function updateRoleUI(){
 
 function render(){
   updateRoleUI();
-  if(!hasValidSession()){ renderLoginRequired(); bindDynamicEvents(); return; }
+  document.body.classList.toggle('logged-out', !hasValidSession());
+  if(!hasValidSession()){ focusLoginField(); return; }
+  const chip = document.getElementById('user-chip');
+  chip.innerHTML = `<b>${esc(SESSION_EMAIL)}</b> · ${esc(ROLE_LABELS[SESSION_ROLE] || '')}`;
+  chip.title = SESSION_EMAIL;
   if(ACTIVE_VIEW==='overview') renderOverview();
   else if(ACTIVE_VIEW==='instruction') renderInstruction();
   else if(ACTIVE_VIEW==='admin') renderAdmin();
@@ -1857,6 +1775,8 @@ function bindDynamicEvents(){
   const adminRefreshBtn = document.getElementById('btn-admin-refresh');
   if(adminRefreshBtn) adminRefreshBtn.addEventListener('click', ()=> render());
   bindUserManagementEvents();
+  const resetBtn = document.getElementById('btn-reset-data');
+  if(resetBtn) resetBtn.addEventListener('click', resetAllData);
 
   // Instruction: filter, new, edit, delete
   const filterEl = document.getElementById('fiche-filter');
@@ -1923,18 +1843,12 @@ document.getElementById('import-file').addEventListener('change', (e)=>{
   if(file) importDataFromFile(file);
   e.target.value = '';
 });
-document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
-document.getElementById('settings-modal-close').addEventListener('click', closeSettingsModal);
-document.getElementById('settings-modal-close-2').addEventListener('click', closeSettingsModal);
-document.getElementById('settings-modal-bg').addEventListener('click', (e)=>{ if(e.target.id==='settings-modal-bg') closeSettingsModal(); });
-document.getElementById('btn-save-connection').addEventListener('click', saveConnectionFromSettings);
-document.getElementById('btn-test-sync').addEventListener('click', testBackendConnection);
-document.getElementById('btn-reset-data').addEventListener('click', resetAllData);
-document.getElementById('btn-send-admin-code').addEventListener('click', sendAdminLoginCode);
-document.getElementById('btn-verify-admin-code').addEventListener('click', verifyAdminLoginCode);
+
+document.getElementById('login-form-email').addEventListener('submit', (e)=>{ e.preventDefault(); sendLoginCode(); });
+document.getElementById('login-form-code').addEventListener('submit', (e)=>{ e.preventDefault(); verifyLoginCode(); });
+document.getElementById('login-change-email').addEventListener('click', ()=> setLoginStep('email'));
+document.getElementById('login-resend').addEventListener('click', sendLoginCode);
 document.getElementById('btn-logout').addEventListener('click', logout);
-document.getElementById('admin-email-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendAdminLoginCode(); });
-document.getElementById('admin-code-input').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') verifyAdminLoginCode(); });
 
 (async function init(){
   await loadData();

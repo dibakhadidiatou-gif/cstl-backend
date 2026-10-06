@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const sgMail = require('@sendgrid/mail');
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret, normalizeEmail } = require('../../lib/auth');
+const { applyCors, normalizeEmail } = require('../../lib/auth');
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 // Delai minimal entre deux envois de code pour une meme adresse : evite
@@ -16,7 +16,6 @@ function hashCode(code) {
 module.exports = async (req, res) => {
   if (applyCors(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'Methode non autorisee' }); return; }
-  if (!checkAppSecret(req)) { res.status(401).json({ ok: false, error: 'Secret application invalide' }); return; }
 
   try {
     const email = normalizeEmail(req.body && req.body.email);

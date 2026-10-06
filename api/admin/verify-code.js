@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const { getSupabase } = require('../../lib/supabase');
-const { applyCors, checkAppSecret, issueSessionToken, normalizeEmail } = require('../../lib/auth');
+const { applyCors, issueSessionToken, normalizeEmail } = require('../../lib/auth');
 
 // Nombre maximal de codes essayes pour un meme code emis. Au-dela, le code
 // est detruit et il faut en redemander un (empeche de tester les 900 000
@@ -20,7 +20,6 @@ function sameHash(a, b) {
 module.exports = async (req, res) => {
   if (applyCors(req, res)) return;
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'Methode non autorisee' }); return; }
-  if (!checkAppSecret(req)) { res.status(401).json({ ok: false, error: 'Secret application invalide' }); return; }
 
   try {
     const email = normalizeEmail(req.body && req.body.email);
