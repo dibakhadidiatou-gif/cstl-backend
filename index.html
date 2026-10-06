@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSTL — Accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #0B132B;
+    --navy-2: #0F172A;
+    --sky: #06B6D4;
+    --sky-light: #67E8F9;
+    --ink: #E2E8F0;
+    --ink-soft: #94A3B8;
+    --line: #2A3A54;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0;}
+  body{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
+    background-color:var(--navy);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:26px 26px;
+    color:var(--ink); font-family:'IBM Plex Sans', sans-serif; font-size:14px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{width:100%; max-width:440px; background:var(--navy-2); border:1px solid var(--line); border-top:3px solid var(--sky); border-radius:4px; box-shadow:var(--shadow); padding:32px 28px 24px; text-align:center;}
+  .crest{
+    width:58px; height:58px; border-radius:50%; margin:0 auto 16px; position:relative;
+    background:radial-gradient(circle at center, #0B132B 0 32%, #FFFFFF 32% 60%, #06B6D4 60% 100%);
+    border:2px solid rgba(255,255,255,0.4);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  }
+  h1{font-family:'Big Shoulders Display', sans-serif; font-weight:700; font-size:24px; color:#fff; text-transform:uppercase; letter-spacing:0.04em; margin:0;}
+  .sub{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--sky-light); letter-spacing:0.07em; text-transform:uppercase; margin:6px 0 26px;}
+  .apps{display:flex; flex-direction:column; gap:12px;}
+  .app{display:block; text-align:left; text-decoration:none; color:var(--ink); background:var(--navy); border:1px solid var(--line); border-left:3px solid var(--sky); border-radius:3px; padding:14px 16px; transition:border-color .15s, background .15s;}
+  .app:hover, .app:focus-visible{border-color:var(--sky-light); background:rgba(255,255,255,0.04); outline:none;}
+  .app-name{font-family:'Big Shoulders Display', sans-serif; font-weight:600; font-size:17px; color:#fff; text-transform:uppercase; letter-spacing:0.04em;}
+  .app-desc{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .foot{font-size:11.5px; color:var(--ink-soft); margin-top:20px; padding-top:14px; border-top:1px dashed var(--line);}
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="crest"></div>
+    <h1>CSTL</h1>
+    <div class="sub">Base Ecole de Thiès · Commandement Soutien Technique et Logistique</div>
+    <nav class="apps">
+      <a class="app" href="cstl-instruction.html">
+        <div class="app-name">Bureau Instruction →</div>
+        <div class="app-desc">Fiches d'instruction : planification, suivi, évaluation, validation.</div>
+      </a>
+      <a class="app" href="cstl-maintenance.html">
+        <div class="app-name">Maintenance →</div>
+        <div class="app-desc">Rubriques de maintenance, effectifs et situation journalière.</div>
+      </a>
+    </nav>
+    <div class="foot">Connexion avec ton adresse email. Pas encore de compte ? Demande à un administrateur.</div>
+  </main>
+</body>
+</html>
