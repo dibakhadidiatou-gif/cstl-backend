@@ -30,6 +30,18 @@ async function listUsers(supabase) {
 }
 
 const MAX_BULK = 500;
+// Nombre maximal de comptes de role admin (les superadmins ne comptent pas).
+const MAX_ADMINS = 10;
+
+async function countAdmins(supabase) {
+  const { data, error } = await supabase.from('users').select('email').eq('role', 'admin');
+  if (error) throw error;
+  return (data || []).length;
+}
+
+function adminLimitMessage() {
+  return `Limite atteinte : ${MAX_ADMINS} administrateurs maximum. Retire ou retrograde un admin d'abord.`;
+}
 
 // Cree plusieurs comptes d'un coup. Chaque ligne est verifiee avec les memes
 // regles qu'un ajout unitaire ; une ligne refusee n'empeche pas les autres
@@ -59,6 +71,18 @@ async function bulkAdd(req, res, supabase, actor) {
       skipped.push({ email: u.email, reason: `compte deja existant (${u.role})` });
     });
   }
+
+  // Les admins du fichier sont acceptes dans l'ordre, jusqu'a la limite.
+  let admins = await countAdmins(supabase);
+  [...candidates].forEach(([email, role]) => {
+    if (role !== 'admin') return;
+    if (admins >= MAX_ADMINS) {
+      candidates.delete(email);
+      skipped.push({ email, reason: `limite de ${MAX_ADMINS} administrateurs atteinte` });
+    } else {
+      admins += 1;
+    }
+  });
 
   const toInsert = [...candidates].map(([email, role]) => ({ email, role, created_by: actor.email }));
   if (toInsert.length) {
@@ -105,6 +129,7 @@ module.exports = async (req, res) => {
       if (!isValidRole(role)) { res.status(400).json({ ok: false, error: 'Role invalide.' }); return; }
       if (!canManage(actor.role, role)) { res.status(403).json({ ok: false, error: 'Ton role ne permet pas de creer ce type de compte.' }); return; }
       if (target) { res.status(200).json({ ok: false, error: `Cette adresse a deja un compte (${target.role}).` }); return; }
+      if (role === 'admin' && await countAdmins(supabase) >= MAX_ADMINS) { res.status(200).json({ ok: false, error: adminLimitMessage() }); return; }
 
       const { error } = await supabase.from('users').insert({ email, role, created_by: actor.email });
       if (error) throw error;
@@ -128,6 +153,10 @@ module.exports = async (req, res) => {
       if (!isValidRole(role)) { res.status(400).json({ ok: false, error: 'Role invalide.' }); return; }
       if (!canManage(actor.role, target.role) || !canManage(actor.role, role)) {
         res.status(403).json({ ok: false, error: 'Ton role ne permet pas ce changement.' });
+        return;
+      }
+      if (role === 'admin' && target.role !== 'admin' && await countAdmins(supabase) >= MAX_ADMINS) {
+        res.status(200).json({ ok: false, error: adminLimitMessage() });
         return;
       }
 
