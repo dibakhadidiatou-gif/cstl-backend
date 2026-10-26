@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const sgMail = require('@sendgrid/mail');
 const { getSupabase } = require('../../lib/supabase');
 const { applyCors, normalizeEmail } = require('../../lib/auth');
 
@@ -47,13 +46,21 @@ module.exports = async (req, res) => {
           .upsert({ email, code_hash: hashCode(code), expires_at: expiresAt, attempts: 0 });
         if (error) throw error;
 
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        await sgMail.send({
-          to: email,
-          from: process.env.SENDGRID_FROM,
-          subject: 'CSTL - Code de connexion administrateur',
-          text: `Ton code de verification est : ${code}\n\nCe code est valable 10 minutes. Si tu n'es pas a l'origine de cette demande, ignore cet email.`
+        const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+            accept: 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { email: process.env.BREVO_FROM, name: 'CSTL' },
+            to: [{ email }],
+            subject: 'CSTL - Code de connexion administrateur',
+            textContent: `Ton code de verification est : ${code}\n\nCe code est valable 10 minutes. Si tu n'es pas a l'origine de cette demande, ignore cet email.`
+          })
         });
+        if (!resp.ok) throw new Error(`Brevo ${resp.status}: ${await resp.text()}`);
       }
     }
 
