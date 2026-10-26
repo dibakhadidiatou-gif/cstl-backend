@@ -47,12 +47,15 @@ module.exports = async (req, res) => {
           .upsert({ email, code_hash: hashCode(code), expires_at: expiresAt, attempts: 0 });
         if (error) throw error;
 
+        const port = Number(process.env.MAIL_PORT) || 587;
         const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+          host: process.env.MAIL_HOST,
+          port,
+          secure: port === 465,
+          auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS }
         });
         await transporter.sendMail({
-          from: `"CSTL" <${process.env.GMAIL_USER}>`,
+          from: `"CSTL" <${process.env.MAIL_FROM}>`,
           to: email,
           subject: 'CSTL - Code de connexion administrateur',
           text: `Ton code de verification est : ${code}\n\nCe code est valable 10 minutes. Si tu n'es pas a l'origine de cette demande, ignore cet email.`
